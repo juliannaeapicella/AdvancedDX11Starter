@@ -485,6 +485,8 @@ void Game::GenerateLights()
 // --------------------------------------------------------
 void Game::OnResize()
 {
+	renderer->PreResize();
+
 	// Handle base-level DX resize stuff
 	DXCore::OnResize();
 

@@ -58,6 +58,12 @@ Renderer::Renderer(
 
 Renderer::~Renderer() {}
 
+void Renderer::PreResize()
+{
+	backBufferRTV.Reset();
+	depthBufferDSV.Reset();
+}
+
 void Renderer::PostResize(
 	unsigned int width, 
 	unsigned int height, 
