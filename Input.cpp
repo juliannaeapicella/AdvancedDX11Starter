@@ -98,7 +98,9 @@ void Input::Update()
 	memcpy(prevKbState, kbState, sizeof(unsigned char) * 256);
 
 	// Get the latest keys (from Windows)
-	GetKeyboardState(kbState);
+	// Note the use of (void), which denotes to the compiler
+	// that we're intentionally ignoring the return value
+	(void)GetKeyboardState(kbState);
 
 	// Get the current mouse position then make it relative to the window
 	POINT mousePos = {};
@@ -229,7 +231,8 @@ bool Input::KeyRelease(int key)
 //  A utility function to fill a given array of booleans 
 //  with the current state of the keyboard.  This is most
 //  useful when hooking the engine's input up to another
-//  system, such as a user interface library.
+//  system, such as a user interface library.  (You probably 
+//  won't use this very much, if at all!)
 // 
 //  keyArray - pointer to a boolean array which will be
 //             filled with the current keyboard state
