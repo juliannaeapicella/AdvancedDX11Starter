@@ -4,15 +4,8 @@
 // How many lights could we handle?
 #define MAX_LIGHTS 128
 
-// Data that can change per material
-cbuffer perMaterial : register(b0)
-{
-	// Surface color
-	float4 Color;
-};
-
 // Data that only changes once per frame
-cbuffer perFrame : register(b1)
+cbuffer perFrame : register(b0)
 {
 	// An array of light data
 	Light Lights[MAX_LIGHTS];
@@ -24,6 +17,12 @@ cbuffer perFrame : register(b1)
 	float3 CameraPosition;
 };
 
+// Data that can change per material
+cbuffer perMaterial : register(b1)
+{
+	// Surface color
+	float4 Color;
+};
 
 // Defines the input to this pixel shader
 // - Should match the output of our corresponding vertex shader

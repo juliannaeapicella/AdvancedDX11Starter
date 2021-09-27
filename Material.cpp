@@ -36,7 +36,7 @@ void Material::PrepareMaterial(Transform* transform, Camera* cam)
 	// Turn shaders on
 	vs->SetShader();
 	ps->SetShader();
-
+	
 	// Set vertex shader data
 	vs->SetMatrix4x4("world", transform->GetWorldMatrix());
 	vs->SetMatrix4x4("worldInverseTranspose", transform->GetWorldInverseTransposeMatrix());
@@ -49,6 +49,29 @@ void Material::PrepareMaterial(Transform* transform, Camera* cam)
 	ps->SetFloat4("Color", color); 
 	ps->SetFloat("Shininess", shininess);
 	ps->CopyBufferData("perMaterial");
+
+	// Set SRVs
+	ps->SetShaderResourceView("AlbedoTexture", albedoSRV);
+	ps->SetShaderResourceView("NormalTexture", normalSRV);
+	ps->SetShaderResourceView("RoughnessTexture", roughnessSRV);
+	ps->SetShaderResourceView("MetalTexture", metalSRV);
+
+	// Set sampler
+	ps->SetSamplerState("BasicSampler", sampler);
+}
+
+void Material::SetPerMaterialDataAndResources(bool copyToGPUNow)
+{
+	vs->SetFloat2("uvScale", uvScale);
+	if (copyToGPUNow) {
+		vs->CopyBufferData("perMaterial");
+	}
+
+	ps->SetFloat4("Color", color);
+	ps->SetFloat("Shininess", shininess);
+	if (copyToGPUNow) {
+		ps->CopyBufferData("perMaterial");
+	}
 
 	// Set SRVs
 	ps->SetShaderResourceView("AlbedoTexture", albedoSRV);

@@ -4,11 +4,13 @@
 #include "Mesh.h"
 #include "GameEntity.h"
 #include "Camera.h"
+#include "Renderer.h"
 #include "SimpleShader.h"
 #include "SpriteFont.h"
 #include "SpriteBatch.h"
 #include "Lights.h"
 #include "Sky.h"
+#include "Input.h"
 
 #include <DirectXMath.h>
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
@@ -37,14 +39,18 @@ private:
 
 	// Keep track of "stuff" to clean up
 	std::vector<Mesh*> meshes;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textures;
 	std::vector<Material*> materials;
 	std::vector<GameEntity*>* currentScene;
 	std::vector<GameEntity*> entities;
 	std::vector<GameEntity*> entitiesRandom;
 	std::vector<GameEntity*> entitiesLineup;
 	std::vector<GameEntity*> entitiesGradient;
+	SimplePixelShader* pixelShader;
+	SimplePixelShader* pixelShaderPBR;
 	std::vector<ISimpleShader*> shaders;
 	Camera* camera;
+	Renderer* renderer;
 
 	// Lights
 	std::vector<Light> lights;
@@ -66,12 +72,38 @@ private:
 	// Skybox
 	Sky* sky;
 
+	float interval;
+
 	// General helpers for setup and drawing
 	void GenerateLights();
-	void DrawPointLights();
-	void DrawUI();
+	void UpdateGUI(float dt, Input& input);
+	void UpdateStatsWindow(int framerate);
+	void UpdateSceneWindow();
+	void GenerateEntitiesHeader(int i, const char* meshTitles[], const char* materialTitles[]);
+	void GenerateLightsHeader(int i);
+	void GenerateCameraHeader();
+	void GenerateMaterialsHeader(int i, const char* textureTitles[]);
+	std::string ConcatStringAndInt(std::string str, int i);
+	std::string ConcatStringAndFloat(std::string str, float f);
+
+	template<typename T, typename A>
+	int FindIndex(std::vector<T, A> const& vec, const T& element);
 
 	// Initialization helper method
 	void LoadAssetsAndCreateEntities();
 };
 
+/// <summary>
+/// Searches a vector for an element and returns its index. -1 if not found.
+/// </summary>
+/// <typeparam name="T"></typeparam>
+/// <typeparam name="A"></typeparam>
+/// <param name="vec"></param>
+/// <param name="element"></param>
+/// <returns>int</returns>
+template<typename T, typename A>
+inline int Game::FindIndex(std::vector<T, A> const& vec, const T& element)
+{
+	auto it = std::find(vec.begin(), vec.end(), element);
+	return distance(vec.begin(), it);
+}

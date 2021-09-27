@@ -6,12 +6,14 @@
 #include "Vertex.h"
 #include "Input.h"
 
+#include "ImGUI/imgui.h"
 #include "WICTextureLoader.h"
-
 
 // Needed for a helper function to read compiled shader files from the hard drive
 #pragma comment(lib, "d3dcompiler.lib")
 #include <d3dcompiler.h>
+#include "ImGUI/imgui_impl_win32.h"
+#include "ImGUI/imgui_impl_dx11.h"
 
 // For the DirectX Math library
 using namespace DirectX;
@@ -23,6 +25,7 @@ using namespace DirectX;
 #define LoadTexture(file, srv) CreateWICTextureFromFile(device.Get(), context.Get(), GetFullPathTo_Wide(file).c_str(), 0, srv.GetAddressOf())
 #define LoadShader(type, file) new type(device.Get(), context.Get(), GetFullPathTo_Wide(file).c_str())
 
+#define GET_VARIABLE_NAME(var) (#var)
 
 // --------------------------------------------------------
 // Constructor
@@ -74,11 +77,17 @@ Game::~Game()
 	// Delete any one-off objects
 	delete sky;
 	delete camera;
+	delete renderer;
 	delete arial;
 	delete spriteBatch;
 
 	// Delete singletons
 	delete& Input::GetInstance();
+
+	// ImGui clean up
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 }
 
 // --------------------------------------------------------
@@ -108,6 +117,21 @@ void Game::Init()
 		3.0f,		// Move speed
 		1.0f,		// Mouse look
 		this->width / (float)this->height); // Aspect ratio
+
+	interval = 0.005;
+
+	// Initialize ImGui
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	
+	// Pick a style (uncomment one of these 3)
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsLight();
+	//ImGui::StyleColorsClassic();
+
+	// Setup Platform/Renderer backends
+	ImGui_ImplWin32_Init(hWnd);
+	ImGui_ImplDX11_Init(device.Get(), context.Get());
 }
 
 
@@ -118,8 +142,8 @@ void Game::LoadAssetsAndCreateEntities()
 {
 	// Load shaders using our succinct LoadShader() macro
 	SimpleVertexShader* vertexShader	= LoadShader(SimpleVertexShader, L"VertexShader.cso");
-	SimplePixelShader* pixelShader		= LoadShader(SimplePixelShader, L"PixelShader.cso");
-	SimplePixelShader* pixelShaderPBR	= LoadShader(SimplePixelShader, L"PixelShaderPBR.cso");
+	pixelShader							= LoadShader(SimplePixelShader, L"PixelShader.cso");
+	pixelShaderPBR						= LoadShader(SimplePixelShader, L"PixelShaderPBR.cso");
 	SimplePixelShader* solidColorPS		= LoadShader(SimplePixelShader, L"SolidColorPS.cso");
 	
 	SimpleVertexShader* skyVS = LoadShader(SimpleVertexShader, L"SkyVS.cso");
@@ -192,6 +216,14 @@ void Game::LoadAssetsAndCreateEntities()
 	LoadTexture(L"../../Assets/Textures/wood_normals.png", woodN);
 	LoadTexture(L"../../Assets/Textures/wood_roughness.png", woodR);
 	LoadTexture(L"../../Assets/Textures/wood_metal.png", woodM);
+
+	textures.push_back(cobbleA); textures.push_back(cobbleN); textures.push_back(cobbleR); textures.push_back(cobbleM);
+	textures.push_back(floorA); textures.push_back(floorN); textures.push_back(floorR); textures.push_back(floorM);
+	textures.push_back(paintA); textures.push_back(paintN); textures.push_back(paintR); textures.push_back(paintM);
+	textures.push_back(scratchedA); textures.push_back(scratchedN); textures.push_back(scratchedR); textures.push_back(scratchedM);
+	textures.push_back(bronzeA); textures.push_back(bronzeN); textures.push_back(bronzeR); textures.push_back(bronzeM);
+	textures.push_back(roughA); textures.push_back(roughN); textures.push_back(roughR); textures.push_back(roughM);
+	textures.push_back(woodA); textures.push_back(woodN); textures.push_back(woodR); textures.push_back(woodM);
 
 	// Describe and create our sampler state
 	D3D11_SAMPLER_DESC sampDesc = {};
@@ -266,7 +298,7 @@ void Game::LoadAssetsAndCreateEntities()
 
 
 	// === Create the PBR entities =====================================
-	GameEntity* cobSpherePBR = new GameEntity(sphereMesh, cobbleMat2xPBR);
+	/*GameEntity* cobSpherePBR = new GameEntity(sphereMesh, cobbleMat2xPBR);
 	cobSpherePBR->GetTransform()->SetScale(2, 2, 2);
 	cobSpherePBR->GetTransform()->SetPosition(-6, 2, 0);
 
@@ -337,8 +369,37 @@ void Game::LoadAssetsAndCreateEntities()
 	entities.push_back(scratchSphere);
 	entities.push_back(bronzeSphere);
 	entities.push_back(roughSphere);
-	entities.push_back(woodSphere);
+	entities.push_back(woodSphere);*/
 
+	GameEntity* cobSpherePBR = new GameEntity(sphereMesh, cobbleMat2xPBR);
+	cobSpherePBR->GetTransform()->SetScale(3, 3, 3);
+	cobSpherePBR->GetTransform()->SetPosition(0, 0, 0);
+	
+	GameEntity* floorSpherePBR = new GameEntity(sphereMesh, floorMatPBR);
+	floorSpherePBR->GetTransform()->SetScale(2, 2, 2);
+	floorSpherePBR->GetTransform()->SetPosition(4, 0, 0);
+
+	GameEntity* scratchSpherePBR = new GameEntity(sphereMesh, scratchedMatPBR);
+	scratchSpherePBR->GetTransform()->SetScale(2, 2, 2);
+	scratchSpherePBR->GetTransform()->SetPosition(-4, 0, 0);
+
+	GameEntity* bronzeSpherePBR = new GameEntity(sphereMesh, bronzeMatPBR);
+	bronzeSpherePBR->GetTransform()->SetPosition(6, 0, 0);
+
+	GameEntity* paintSpherePBR = new GameEntity(sphereMesh, paintMatPBR);
+	paintSpherePBR->GetTransform()->SetScale(0.5, 0.5, 0.5);
+	paintSpherePBR->GetTransform()->SetPosition(6, 1, 0);
+
+	cobSpherePBR->GetTransform()->AddChild(floorSpherePBR->GetTransform());
+	cobSpherePBR->GetTransform()->AddChild(scratchSpherePBR->GetTransform());
+	floorSpherePBR->GetTransform()->AddChild(bronzeSpherePBR->GetTransform());
+	bronzeSpherePBR->GetTransform()->AddChild(paintSpherePBR->GetTransform());
+
+	entities.push_back(cobSpherePBR);
+	entities.push_back(floorSpherePBR);
+	entities.push_back(scratchSpherePBR);
+	entities.push_back(bronzeSpherePBR);
+	entities.push_back(paintSpherePBR);
 
 	// Save assets needed for drawing point lights
 	// (Since these are just copies of the pointers,
@@ -347,6 +408,23 @@ void Game::LoadAssetsAndCreateEntities()
 	lightMesh = sphereMesh;
 	lightVS = vertexShader;
 	lightPS = solidColorPS;
+
+	renderer = new Renderer(
+		device,
+		context,
+		swapChain,
+		backBufferRTV,
+		depthStencilView,
+		this->width,
+		this->height,
+		sky,
+		entities,
+		lights,
+		lightMesh,
+		lightVS,
+		lightPS,
+		pixelShaderPBR
+	);
 }
 
 
@@ -413,6 +491,13 @@ void Game::OnResize()
 	// Update our projection matrix to match the new aspect ratio
 	if (camera)
 		camera->UpdateProjectionMatrix(this->width / (float)this->height);
+
+	renderer->PostResize(
+		this->width,
+		this->height,
+		backBufferRTV,
+		depthStencilView
+	);
 }
 
 // --------------------------------------------------------
@@ -420,11 +505,29 @@ void Game::OnResize()
 // --------------------------------------------------------
 void Game::Update(float deltaTime, float totalTime)
 {
+	// get input
+	Input& input = Input::GetInstance();
+
+	int yPos = entities[0]->GetTransform()->GetPosition().y;
+	if (yPos == 2 || yPos == -2) {
+		interval = -interval;
+	}
+
+	// move entities
+	entities[0]->GetTransform()->MoveRelative(0.001, 0, 0);
+	entities[0]->GetTransform()->MoveAbsolute(0, interval, 0);
+	entities[0]->GetTransform()->Rotate(0, 0.005, 0);
+	entities[1]->GetTransform()->Rotate(0, 0.02, 0);
+	entities[2]->GetTransform()->Rotate(0, 0.01, 0);
+	entities[3]->GetTransform()->Rotate(0.02, 0, 0);
+
+	//update the GUI
+	UpdateGUI(deltaTime, input);
+
 	// Update the camera
 	camera->Update(deltaTime);
 
 	// Check individual input
-	Input& input = Input::GetInstance();
 	if (input.KeyDown(VK_ESCAPE)) Quit();
 	if (input.KeyPress(VK_TAB)) GenerateLights();
 
@@ -435,143 +538,299 @@ void Game::Update(float deltaTime, float totalTime)
 // --------------------------------------------------------
 void Game::Draw(float deltaTime, float totalTime)
 {
-	// Background color for clearing
-	const float color[4] = { 0, 0, 0, 1 };
-
-	// Clear the render target and depth buffer (erases what's on the screen)
-	//  - Do this ONCE PER FRAME
-	//  - At the beginning of Draw (before drawing *anything*)
-	context->ClearRenderTargetView(backBufferRTV.Get(), color);
-	context->ClearDepthStencilView(
-		depthStencilView.Get(),
-		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-		1.0f,
-		0);
-
-
-	// Draw all of the entities
-	for (auto ge : entities)
-	{
-		// Set the "per frame" data
-		// Note that this should literally be set once PER FRAME, before
-		// the draw loop, but we're currently setting it per entity since 
-		// we are just using whichever shader the current entity has.  
-		// Inefficient!!!
-		SimplePixelShader* ps = ge->GetMaterial()->GetPS();
-		ps->SetData("Lights", (void*)(&lights[0]), sizeof(Light) * lightCount);
-		ps->SetInt("LightCount", lightCount);
-		ps->SetFloat3("CameraPosition", camera->GetTransform()->GetPosition());
-		ps->CopyBufferData("perFrame");
-
-		// Draw the entity
-		ge->Draw(context, camera);
-	}
-
-	// Draw the light sources
-	DrawPointLights();
-
-	// Draw the sky
-	sky->Draw(camera);
-
-	// Draw some UI
-	DrawUI();
-
-
-	// Present the back buffer to the user
-	//  - Puts the final frame we're drawing into the window so the user can see it
-	//  - Do this exactly ONCE PER FRAME (always at the very end of the frame)
-	swapChain->Present(0, 0);
-
-	// Due to the usage of a more sophisticated swap chain,
-	// the render target must be re-bound after every call to Present()
-	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthStencilView.Get());
+	renderer->Render(camera);
 }
 
-
-// --------------------------------------------------------
-// Draws the point lights as solid color spheres
-// --------------------------------------------------------
-void Game::DrawPointLights()
+void Game::UpdateGUI(float dt, Input& input)
 {
-	// Turn on these shaders
-	lightVS->SetShader();
-	lightPS->SetShader();
+	// Reset input manager's gui state so we don’t
+	// taint our own input (you'll uncomment later)
+	input.SetGuiKeyboardCapture(false);
+	input.SetGuiMouseCapture(false);
 
-	// Set up vertex shader
-	lightVS->SetMatrix4x4("view", camera->GetView());
-	lightVS->SetMatrix4x4("projection", camera->GetProjection());
+	// Set io info
+	ImGuiIO& io = ImGui::GetIO();
+	io.DeltaTime = dt;
+	io.DisplaySize.x = (float)this->width;
+	io.DisplaySize.y = (float)this->height;
+	io.KeyCtrl = input.KeyDown(VK_CONTROL);
+	io.KeyShift = input.KeyDown(VK_SHIFT);
+	io.KeyAlt = input.KeyDown(VK_MENU);
+	io.MousePos.x = (float)input.GetMouseX();
+	io.MousePos.y = (float)input.GetMouseY();
+	io.MouseDown[0] = input.MouseLeftDown();
+	io.MouseDown[1] = input.MouseRightDown();
+	io.MouseDown[2] = input.MouseMiddleDown();
+	io.MouseWheel = input.GetMouseWheel();
+	input.GetKeyArray(io.KeysDown, 256);
 
-	for (int i = 0; i < lightCount; i++)
-	{
-		Light light = lights[i];
+	// Reset the frame
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
 
-		// Only drawing points, so skip others
-		if (light.Type != LIGHT_TYPE_POINT)
-			continue;
+	// Determine new input capture (you'll uncomment later)
+	input.SetGuiKeyboardCapture(io.WantCaptureKeyboard);
+	input.SetGuiMouseCapture(io.WantCaptureMouse);
 
-		// Calc quick scale based on range
-		// (assuming range is between 5 - 10)
-		float scale = light.Range / 10.0f;
-
-		// Make the transform for this light
-		XMMATRIX rotMat = XMMatrixIdentity();
-		XMMATRIX scaleMat = XMMatrixScaling(scale, scale, scale);
-		XMMATRIX transMat = XMMatrixTranslation(light.Position.x, light.Position.y, light.Position.z);
-		XMMATRIX worldMat = scaleMat * rotMat * transMat;
-
-		XMFLOAT4X4 world;
-		XMFLOAT4X4 worldInvTrans;
-		XMStoreFloat4x4(&world, worldMat);
-		XMStoreFloat4x4(&worldInvTrans, XMMatrixInverse(0, XMMatrixTranspose(worldMat)));
-
-		// Set up the world matrix for this light
-		lightVS->SetMatrix4x4("world", world);
-		lightVS->SetMatrix4x4("worldInverseTranspose", worldInvTrans);
-
-		// Set up the pixel shader data
-		XMFLOAT3 finalColor = light.Color;
-		finalColor.x *= light.Intensity;
-		finalColor.y *= light.Intensity;
-		finalColor.z *= light.Intensity;
-		lightPS->SetFloat3("Color", finalColor);
-
-		// Copy data
-		lightVS->CopyAllBufferData();
-		lightPS->CopyAllBufferData();
-
-		// Draw
-		lightMesh->SetBuffersAndDraw(context);
-	}
-
+	// creat windows
+	UpdateStatsWindow(io.Framerate);
+	UpdateSceneWindow();
 }
 
-
-// --------------------------------------------------------
-// Draws a simple informational "UI" using sprite batch
-// --------------------------------------------------------
-void Game::DrawUI()
+void Game::UpdateStatsWindow(int framerate)
 {
-	spriteBatch->Begin();
+	ImGui::Begin("Program Stats");
 
-	// Basic controls
-	float h = 10.0f;
-	arial->DrawString(spriteBatch, L"Controls:", XMVectorSet(10, h, 0, 0));
-	arial->DrawString(spriteBatch, L" (WASD, X, Space) Move camera", XMVectorSet(10, h + 20, 0, 0));
-	arial->DrawString(spriteBatch, L" (Left Click & Drag) Rotate camera", XMVectorSet(10, h + 40, 0, 0));
-	arial->DrawString(spriteBatch, L" (Left Shift) Hold to speed up camera", XMVectorSet(10, h + 60, 0, 0));
-	arial->DrawString(spriteBatch, L" (Left Ctrl) Hold to slow down camera", XMVectorSet(10, h + 80, 0, 0));
-	arial->DrawString(spriteBatch, L" (TAB) Randomize lights", XMVectorSet(10, h + 100, 0, 0));
+	ImGui::Text(ConcatStringAndInt("Framerate: ", framerate).c_str());
 
-	// Current "scene" info
-	h = 150;
-	arial->DrawString(spriteBatch, L"Scene Details:", XMVectorSet(10, h, 0, 0));
-	arial->DrawString(spriteBatch, L" Top: PBR materials", XMVectorSet(10, h + 20, 0, 0));
-	arial->DrawString(spriteBatch, L" Bottom: Non-PBR materials", XMVectorSet(10, h + 40, 0, 0));
+	if (ImGui::CollapsingHeader("Window Properties")) {
+		ImGui::Text(ConcatStringAndInt("Width: ", this->width).c_str());
+		ImGui::Text(ConcatStringAndInt("Height: ", this->height).c_str());
+		ImGui::Text(ConcatStringAndFloat("Aspect Ratio: ", (this->width / (float)this->height)).c_str());
+	}
 
-	spriteBatch->End();
+	if (ImGui::CollapsingHeader("Scene Properties")) {
+		ImGui::Text(ConcatStringAndInt("Number of Entities: ", entities.size()).c_str());
+		ImGui::Text(ConcatStringAndInt("Number of Lights: ", lightCount).c_str());
+	}
 
-	// Reset render states, since sprite batch changes these!
-	context->OMSetBlendState(0, 0, 0xFFFFFFFF);
-	context->OMSetDepthStencilState(0, 0);
+	ImGui::End();
+}
 
+void Game::UpdateSceneWindow()
+{
+	ImGui::Begin("Scene");
+
+	if (ImGui::CollapsingHeader("Entities")) {
+		// number of entities
+		ImGui::Text(ConcatStringAndInt("Number of Entities: ", entities.size()).c_str());
+
+		const char* meshTitles[] = { "Sphere", "Helix", "Cube", "Cone" };
+
+		const char* materialTitles[] = {
+			"Cobblestone",
+			"Floor",
+			"Paint",
+			"Scratched",
+			"Bronze",
+			"Rough",
+			"Wood",
+			"Cobblestone - PBR",
+			"Floor - PBR",
+			"Paint - PBR",
+			"Scratched - PBR",
+			"Bronze - PBR",
+			"Rough - PBR",
+			"Wood - PBR"
+		};
+
+		// specific entity headers
+		for (int i = 0; i < entities.size(); i++)
+		{
+			GenerateEntitiesHeader(i, meshTitles, materialTitles);
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Lights")) {
+		// number of lights slider
+		ImGui::SliderInt("Number of Lights", &lightCount, 0, 64);
+
+		// specific light headers
+		for (int i = 0; i < lightCount; i++)
+		{
+			GenerateLightsHeader(i);
+		}
+	}
+
+	GenerateCameraHeader();
+
+	if (ImGui::CollapsingHeader("Materials")) {
+		// number of materials
+		ImGui::Text(ConcatStringAndInt("Number of Materials: ", materials.size()).c_str());
+
+		const char* textureTitles[] = {
+			"Cobblestone A", "Cobblestone N", "Cobblestone R", "Cobblestone M",
+			"Floor A", "Floor N", "Floor R", "Floor M",
+			"Paint A", "Paint N", "Paint R", "Paint M",
+			"Scratched A", "Scratched N", "Scratched R", "Scratched M",
+			"Bronze A", "Bronze N", "Bronze R", "Bronze M",
+			"Rough A", "Rough N", "Rough R", "Rough M",
+			"Wood A", "Wood N", "Wood R", "Wood M",
+		};
+
+		// select specific material headers
+		for (int i = 0; i < materials.size(); i++)
+		{
+			GenerateMaterialsHeader(i, textureTitles);
+		}
+	}
+
+	ImGui::End();
+}
+
+void Game::GenerateEntitiesHeader(int i, const char* meshTitles[], const char* materialTitles[])
+{
+	if (ImGui::CollapsingHeader(ConcatStringAndInt("Entity ", i + 1).c_str())) {
+		// change mesh
+		int currentMesh = FindIndex(meshes, entities[i]->GetMesh());
+		ImGui::Combo(ConcatStringAndInt("Mesh##E", i).c_str(), &currentMesh, meshTitles, meshes.size());
+		entities[i]->SetMesh(meshes[currentMesh]);
+
+		// change materials
+		int currentMaterial = FindIndex(materials, entities[i]->GetMaterial());
+		ImGui::Combo(ConcatStringAndInt("Material##E", i).c_str(), &currentMaterial, materialTitles, materials.size());
+		entities[i]->SetMaterial(materials[currentMaterial]);
+
+		// transform controls
+		ImGui::Text("Transform:");
+
+		XMFLOAT3 pos = entities[i]->GetTransform()->GetPosition();
+		ImGui::InputFloat3(ConcatStringAndInt("Position##E", i).c_str(), &pos.x);
+		entities[i]->GetTransform()->SetPosition(pos.x, pos.y, pos.z);
+
+		XMFLOAT3 rot = entities[i]->GetTransform()->GetPitchYawRoll();
+		ImGui::SliderFloat3(ConcatStringAndInt("Rotation##E", i).c_str(), &rot.x, 0.0f, 6.28319f);
+		entities[i]->GetTransform()->SetRotation(rot.x, rot.y, rot.z);
+
+		XMFLOAT3 scale = entities[i]->GetTransform()->GetScale();
+		ImGui::InputFloat3(ConcatStringAndInt("Scale##E", i).c_str(), &scale.x);
+		entities[i]->GetTransform()->SetScale(scale.x, scale.y, scale.z);
+
+		// add/remove children
+		if (ImGui::CollapsingHeader(ConcatStringAndInt("Add/Remove Children##E", i + 1).c_str())) {
+			for (int j = 0; j < entities.size(); j++) {
+				if (i == j)
+					continue;
+
+				Transform* parentTransform = entities[i]->GetTransform();
+				Transform* childTransform = entities[j]->GetTransform();
+
+				bool isChild = parentTransform->IndexOfChild(childTransform) > -1;
+				ImGui::Checkbox(
+					(ConcatStringAndInt("Child ", j + 1) + ConcatStringAndInt("##", i + 1)).c_str(), &isChild);
+				if (!isChild) {
+					parentTransform->RemoveChild(childTransform);
+				}
+				else {
+					parentTransform->AddChild(childTransform);
+				}
+			}
+		}
+	}
+}
+
+void Game::GenerateLightsHeader(int i)
+{
+
+	if (ImGui::CollapsingHeader(ConcatStringAndInt("Light ", i + 1).c_str())) {
+		// type buttons
+		ImGui::RadioButton(ConcatStringAndInt("Directional##", i).c_str(), &lights[i].Type, LIGHT_TYPE_DIRECTIONAL); ImGui::SameLine();
+		ImGui::RadioButton(ConcatStringAndInt("Point##", i).c_str(), &lights[i].Type, LIGHT_TYPE_POINT); ImGui::SameLine();
+		ImGui::RadioButton(ConcatStringAndInt("Spot##", i).c_str(), &lights[i].Type, LIGHT_TYPE_SPOT);
+
+		switch (lights[i].Type) {
+		case LIGHT_TYPE_SPOT:
+			ImGui::SliderFloat(ConcatStringAndInt("Spot Falloff##", i).c_str(), &lights[i].SpotFalloff, 0, 20);
+		case LIGHT_TYPE_DIRECTIONAL:
+			ImGui::SliderFloat3(ConcatStringAndInt("Direction##", i).c_str(), &lights[i].Direction.x, -1, 1);
+			break;
+		case LIGHT_TYPE_POINT:
+			ImGui::SliderFloat(ConcatStringAndInt("Range##", i).c_str(), &lights[i].Range, 0, 20);
+			break;
+		}
+
+		ImGui::InputFloat3(ConcatStringAndInt("Position##L", i).c_str(), &lights[i].Position.x);
+		ImGui::SliderFloat(ConcatStringAndInt("Intensity##", i).c_str(), &lights[i].Intensity, 0, 5);
+		ImGui::ColorEdit3(ConcatStringAndInt("Color##L", i).c_str(), &lights[i].Color.x);
+	}
+}
+
+void Game::GenerateCameraHeader()
+{
+	if (ImGui::CollapsingHeader("Cameras")) {
+		// camera information - only one right now
+		ImGui::Text("Current Camera: First-Person Controllable");
+
+		// set position
+		XMFLOAT3 pos = camera->GetTransform()->GetPosition();
+		ImGui::InputFloat3("Position##C", &pos.x);
+		camera->GetTransform()->SetPosition(pos.x, pos.y, pos.z);
+
+		// set rotation
+		XMFLOAT3 rot = camera->GetTransform()->GetPitchYawRoll();
+		ImGui::SliderFloat2("Rotation##C", &rot.x, 0.0f, 6.28319f);
+		camera->GetTransform()->SetRotation(rot.x, rot.y, rot.z);
+	}
+}
+
+void Game::GenerateMaterialsHeader(int i, const char* textureTitles[])
+{
+	if (ImGui::CollapsingHeader(ConcatStringAndInt("Material ", i + 1).c_str())) {
+		// toggle PBR
+		bool isPBR = materials[i]->GetPS() == pixelShaderPBR;
+		ImGui::Checkbox(ConcatStringAndInt("PBR##", i).c_str(), &isPBR);
+		if (isPBR) {
+			materials[i]->SetPS(pixelShaderPBR);
+		}
+		else {
+			materials[i]->SetPS(pixelShader);
+
+			float shininess = materials[i]->GetShininess();
+			ImGui::SliderFloat(ConcatStringAndInt("Shininess##Ma", i).c_str(), &shininess, 0.0f, 256.0f);
+			materials[i]->SetShininess(shininess);
+		}
+
+		DirectX::XMFLOAT4 color = materials[i]->GetColor();
+		ImGui::ColorEdit3(ConcatStringAndInt("Color##Ma", i).c_str(), &color.x);
+		materials[i]->SetColor(color);
+
+		// display and edit textures
+		ImGui::Text("Textures: ");
+		ImVec2 size = ImVec2(100, 100);
+		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
+		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
+		ImVec4 tint_col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);   // No tint
+		ImVec4 border_col = ImVec4(1.0f, 1.0f, 1.0f, 0.5f); // 50% opaque white
+
+		ImTextureID albedo = materials[i]->GetAlbedo().Get();
+		ImGui::Image(albedo, size, uv_min, uv_max, tint_col, border_col); ImGui::SameLine();
+
+		ImTextureID normal = materials[i]->GetNormal().Get();
+		ImGui::Image(normal, size, uv_min, uv_max, tint_col, border_col); ImGui::SameLine();
+
+		ImTextureID roughness = materials[i]->GetRoughness().Get();
+		ImGui::Image(roughness, size, uv_min, uv_max, tint_col, border_col); ImGui::SameLine();
+
+		ImTextureID metal = materials[i]->GetMetal().Get();
+		ImGui::Image(metal, size, uv_min, uv_max, tint_col, border_col);
+
+		int currentAlbedo = FindIndex(textures, materials[i]->GetAlbedo());
+		ImGui::Combo(ConcatStringAndInt("Albedo##Ma", i).c_str(), &currentAlbedo, textureTitles, textures.size());
+		materials[i]->SetAlbedo(textures[currentAlbedo]);
+
+		int currentNormal = FindIndex(textures, materials[i]->GetNormal());
+		ImGui::Combo(ConcatStringAndInt("Normal##Ma", i).c_str(), &currentNormal, textureTitles, textures.size());
+		materials[i]->SetNormal(textures[currentNormal]);
+
+		int currentRough = FindIndex(textures, materials[i]->GetRoughness());
+		ImGui::Combo(ConcatStringAndInt("Roughness##Ma", i).c_str(), &currentRough, textureTitles, textures.size());
+		materials[i]->SetRoughness(textures[currentRough]);
+
+		int currentMetal = FindIndex(textures, materials[i]->GetMetal());
+		ImGui::Combo(ConcatStringAndInt("Metal##Ma", i).c_str(), &currentMetal, textureTitles, textures.size());
+		materials[i]->SetMetal(textures[currentMetal]);
+	}
+}
+
+std::string Game::ConcatStringAndInt(std::string str, int i)
+{
+	std::string numToString = std::to_string(i);
+	return str + numToString;
+}
+
+std::string Game::ConcatStringAndFloat(std::string str, float f)
+{
+	std::string numToString = std::to_string(f);
+	return str + numToString;
 }
