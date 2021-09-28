@@ -105,6 +105,8 @@ private:
 
 	physx::PxScene* mScene;
 	physx::PxMaterial* mMaterial;
+
+	physx::PxRigidDynamic* body;
 };
 
 /// <summary>

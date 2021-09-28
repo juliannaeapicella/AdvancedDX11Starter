@@ -13,9 +13,11 @@
 #include <d3dcompiler.h>
 #include "ImGUI/imgui_impl_win32.h"
 #include "ImGUI/imgui_impl_dx11.h"
+#include <iostream>
 
 // For the DirectX Math library
 using namespace DirectX;
+using namespace physx;
 
 // Helper macro for getting a float between min and max
 #define RandomRange(min, max) (float)rand() / RAND_MAX * (max - min) + min
@@ -90,7 +92,6 @@ Game::~Game()
 
 	// PhysX
 	mPhysics->release();
-	//mScene->release();
 	mDispatcher->release();
 	mFoundation->release();
 }
@@ -118,7 +119,7 @@ void Game::Init()
 
 	// Make our camera
 	camera = new Camera(
-		0, 0, -10,	// Position
+		0, 0, -50,	// Position
 		3.0f,		// Move speed
 		1.0f,		// Mouse look
 		this->width / (float)this->height); // Aspect ratio
@@ -145,32 +146,25 @@ void Game::Init()
 	mToleranceScale.speed = 981;         // typical speed of an object, gravity*1s is a reasonable choice
 	mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale, true, NULL);
 
-	physx::PxSceneDesc sceneDesc(mPhysics->getTolerancesScale());
-	sceneDesc.gravity = physx::PxVec3(0.0f, -9.81f, 0.0f);
-	mDispatcher = physx::PxDefaultCpuDispatcherCreate(2);
+	PxSceneDesc sceneDesc(mPhysics->getTolerancesScale());
+	sceneDesc.gravity = PxVec3(0.0f, -1.81f, 0.0f);
+	mDispatcher = PxDefaultCpuDispatcherCreate(2);
 	sceneDesc.cpuDispatcher = mDispatcher;
-	sceneDesc.filterShader = physx::PxDefaultSimulationFilterShader;
+	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+	sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVE_ACTORS;
 	mScene = mPhysics->createScene(sceneDesc);
 
-
-
 	mMaterial = mPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-	physx::PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, physx::PxPlane(0, 1, 0, 50), *mMaterial);
+	PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, physx::PxPlane(0, 1, 0, 5), *mMaterial);
 	mScene->addActor(*groundPlane);
 
-	float halfExtent = .5f;
-	physx::PxShape* shape = mPhysics->createShape(physx::PxBoxGeometry(halfExtent, halfExtent, halfExtent), *mMaterial);
-	physx::PxU32 size = 10;
-	physx::PxTransform t(physx::PxVec3(0));
-	for (physx::PxU32 i = 0; i < size; i++) {
-		for (physx::PxU32 j = 0; j < size - i; j++) {
-			physx::PxTransform localTm(physx::PxVec3(physx::PxReal(j * 2) - physx::PxReal(size - i), physx::PxReal(i * 2 + 1), 0) * halfExtent);
-			physx::PxRigidDynamic* body = mPhysics->createRigidDynamic(t.transform(localTm));
-			body->attachShape(*shape);
-			physx::PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
-			mScene->addActor(*body);
-		}
-	}
+	// add sphere
+	PxShape* shape = mPhysics->createShape(PxSphereGeometry(1.0f), *mMaterial, true);
+	body = mPhysics->createRigidDynamic(PxTransform(PxVec3(0, 5, 0)));
+	body->attachShape(*shape);
+	PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
+	body->setLinearVelocity(PxVec3(1, 0, 0)); // apply force (torque) instead
+	mScene->addActor(*body);
 	shape->release();
 }
 
@@ -210,7 +204,6 @@ void Game::LoadAssetsAndCreateEntities()
 	meshes.push_back(helixMesh);
 	meshes.push_back(cubeMesh);
 	meshes.push_back(coneMesh);
-
 	
 	// Declare the textures we'll need
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobbleA,  cobbleN,  cobbleR,  cobbleM;
@@ -411,35 +404,9 @@ void Game::LoadAssetsAndCreateEntities()
 	entities.push_back(roughSphere);
 	entities.push_back(woodSphere);*/
 
-	GameEntity* cobSpherePBR = new GameEntity(sphereMesh, cobbleMat2xPBR);
-	cobSpherePBR->GetTransform()->SetScale(3, 3, 3);
-	cobSpherePBR->GetTransform()->SetPosition(0, 0, 0);
-	
-	GameEntity* floorSpherePBR = new GameEntity(sphereMesh, floorMatPBR);
-	floorSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	floorSpherePBR->GetTransform()->SetPosition(4, 0, 0);
-
-	GameEntity* scratchSpherePBR = new GameEntity(sphereMesh, scratchedMatPBR);
-	scratchSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	scratchSpherePBR->GetTransform()->SetPosition(-4, 0, 0);
-
 	GameEntity* bronzeSpherePBR = new GameEntity(sphereMesh, bronzeMatPBR);
-	bronzeSpherePBR->GetTransform()->SetPosition(6, 0, 0);
-
-	GameEntity* paintSpherePBR = new GameEntity(sphereMesh, paintMatPBR);
-	paintSpherePBR->GetTransform()->SetScale(0.5, 0.5, 0.5);
-	paintSpherePBR->GetTransform()->SetPosition(6, 1, 0);
-
-	cobSpherePBR->GetTransform()->AddChild(floorSpherePBR->GetTransform());
-	cobSpherePBR->GetTransform()->AddChild(scratchSpherePBR->GetTransform());
-	floorSpherePBR->GetTransform()->AddChild(bronzeSpherePBR->GetTransform());
-	bronzeSpherePBR->GetTransform()->AddChild(paintSpherePBR->GetTransform());
-
-	entities.push_back(cobSpherePBR);
-	entities.push_back(floorSpherePBR);
-	entities.push_back(scratchSpherePBR);
+	bronzeSpherePBR->GetTransform()->SetPosition(0, 0, 0);
 	entities.push_back(bronzeSpherePBR);
-	entities.push_back(paintSpherePBR);
 
 	// Save assets needed for drawing point lights
 	// (Since these are just copies of the pointers,
@@ -550,19 +517,6 @@ void Game::Update(float deltaTime, float totalTime)
 	// get input
 	Input& input = Input::GetInstance();
 
-	int yPos = entities[0]->GetTransform()->GetPosition().y;
-	if (yPos == 2 || yPos == -2) {
-		interval = -interval;
-	}
-
-	// move entities
-	entities[0]->GetTransform()->MoveRelative(0.001, 0, 0);
-	entities[0]->GetTransform()->MoveAbsolute(0, interval, 0);
-	entities[0]->GetTransform()->Rotate(0, 0.005, 0);
-	entities[1]->GetTransform()->Rotate(0, 0.02, 0);
-	entities[2]->GetTransform()->Rotate(0, 0.01, 0);
-	entities[3]->GetTransform()->Rotate(0.02, 0, 0);
-
 	//update the GUI
 	UpdateGUI(deltaTime, input);
 
@@ -574,8 +528,13 @@ void Game::Update(float deltaTime, float totalTime)
 	if (input.KeyPress(VK_TAB)) GenerateLights();
 
 	// PhysX
-	mScene->simulate(1.0f / 60.0f);
+	mScene->simulate(1.0f/60.0f); // lock framerate of engine?
 	mScene->fetchResults(true);
+	
+	PxVec3 pos = body->getGlobalPose().p;
+	PxQuat rot = body->getGlobalPose().q;
+	entities[0]->GetTransform()->SetPosition(pos.x, pos.y, pos.z);
+	//entities[0]->GetTransform()->SetRotation(); // make a set rotation for euler angles
 }
 
 // --------------------------------------------------------
