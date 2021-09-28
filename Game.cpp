@@ -1,4 +1,3 @@
-
 #include <stdlib.h>     // For seeding random and rand()
 #include <time.h>       // For grabbing time (to seed random)
 
@@ -88,6 +87,12 @@ Game::~Game()
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
+
+	// PhysX
+	mPhysics->release();
+	//mScene->release();
+	mDispatcher->release();
+	mFoundation->release();
 }
 
 // --------------------------------------------------------
@@ -132,6 +137,41 @@ void Game::Init()
 	// Setup Platform/Renderer backends
 	ImGui_ImplWin32_Init(hWnd);
 	ImGui_ImplDX11_Init(device.Get(), context.Get());
+
+	// PhysX
+	mFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, mDefaultAllocatorCallback, mDefaultErrorCallback);
+	if (!mFoundation) throw("PxCreateFoundation failed!");
+	mToleranceScale.length = 100;        // typical length of an object
+	mToleranceScale.speed = 981;         // typical speed of an object, gravity*1s is a reasonable choice
+	mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale, true, NULL);
+
+	physx::PxSceneDesc sceneDesc(mPhysics->getTolerancesScale());
+	sceneDesc.gravity = physx::PxVec3(0.0f, -9.81f, 0.0f);
+	mDispatcher = physx::PxDefaultCpuDispatcherCreate(2);
+	sceneDesc.cpuDispatcher = mDispatcher;
+	sceneDesc.filterShader = physx::PxDefaultSimulationFilterShader;
+	mScene = mPhysics->createScene(sceneDesc);
+
+
+
+	mMaterial = mPhysics->createMaterial(0.5f, 0.5f, 0.6f);
+	physx::PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, physx::PxPlane(0, 1, 0, 50), *mMaterial);
+	mScene->addActor(*groundPlane);
+
+	float halfExtent = .5f;
+	physx::PxShape* shape = mPhysics->createShape(physx::PxBoxGeometry(halfExtent, halfExtent, halfExtent), *mMaterial);
+	physx::PxU32 size = 10;
+	physx::PxTransform t(physx::PxVec3(0));
+	for (physx::PxU32 i = 0; i < size; i++) {
+		for (physx::PxU32 j = 0; j < size - i; j++) {
+			physx::PxTransform localTm(physx::PxVec3(physx::PxReal(j * 2) - physx::PxReal(size - i), physx::PxReal(i * 2 + 1), 0) * halfExtent);
+			physx::PxRigidDynamic* body = mPhysics->createRigidDynamic(t.transform(localTm));
+			body->attachShape(*shape);
+			physx::PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
+			mScene->addActor(*body);
+		}
+	}
+	shape->release();
 }
 
 
@@ -533,6 +573,9 @@ void Game::Update(float deltaTime, float totalTime)
 	if (input.KeyDown(VK_ESCAPE)) Quit();
 	if (input.KeyPress(VK_TAB)) GenerateLights();
 
+	// PhysX
+	mScene->simulate(1.0f / 60.0f);
+	mScene->fetchResults(true);
 }
 
 // --------------------------------------------------------

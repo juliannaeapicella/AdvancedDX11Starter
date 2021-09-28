@@ -12,6 +12,9 @@
 #include "Sky.h"
 #include "Input.h"
 
+#include <PxPhysics.h>
+#include <PxPhysicsAPI.h>
+
 #include <DirectXMath.h>
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
 #include <vector>
@@ -91,6 +94,17 @@ private:
 
 	// Initialization helper method
 	void LoadAssetsAndCreateEntities();
+
+	// PhysX stuff
+	physx::PxDefaultAllocator mDefaultAllocatorCallback;
+	physx::PxDefaultErrorCallback mDefaultErrorCallback;
+	physx::PxDefaultCpuDispatcher* mDispatcher;
+	physx::PxTolerancesScale mToleranceScale;
+	physx::PxFoundation* mFoundation;
+	physx::PxPhysics* mPhysics;
+
+	physx::PxScene* mScene;
+	physx::PxMaterial* mMaterial;
 };
 
 /// <summary>
