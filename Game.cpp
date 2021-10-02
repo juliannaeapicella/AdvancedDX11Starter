@@ -119,10 +119,13 @@ void Game::Init()
 
 	// Make our camera
 	camera = new Camera(
-		0, 0, -50,	// Position
+		0, 5, -20,	// Position
 		3.0f,		// Move speed
 		1.0f,		// Mouse look
 		this->width / (float)this->height); // Aspect ratio
+
+	camera->GetTransform()->SetRotation(0.3, 0, 0);
+	camera->Update(0.0f);
 
 	interval = 0.005;
 
@@ -155,7 +158,7 @@ void Game::Init()
 	mScene = mPhysics->createScene(sceneDesc);
 
 	mMaterial = mPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-	PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, physx::PxPlane(0, 1, 0, 5), *mMaterial);
+	PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, physx::PxPlane(0, 1, 0, 2.5), *mMaterial);
 	mScene->addActor(*groundPlane);
 
 	// add sphere
@@ -163,7 +166,6 @@ void Game::Init()
 	body = mPhysics->createRigidDynamic(PxTransform(PxVec3(0, 5, 0)));
 	body->attachShape(*shape);
 	PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
-	body->setLinearVelocity(PxVec3(1, 0, 0)); // apply force (torque) instead
 	mScene->addActor(*body);
 	shape->release();
 }
@@ -521,20 +523,27 @@ void Game::Update(float deltaTime, float totalTime)
 	UpdateGUI(deltaTime, input);
 
 	// Update the camera
-	camera->Update(deltaTime);
+	//camera->Update(deltaTime);
 
 	// Check individual input
 	if (input.KeyDown(VK_ESCAPE)) Quit();
 	if (input.KeyPress(VK_TAB)) GenerateLights();
 
 	// PhysX
+	if (input.KeyDown('W')) { body->addForce(PxVec3(0, 0, 5)); }
+	if (input.KeyDown('S')) { body->addForce(PxVec3(0, 0, -5)); }
+	if (input.KeyDown('A')) { body->addForce(PxVec3(-5, 0, 0)); }
+	if (input.KeyDown('D')) { body->addForce(PxVec3(5, 0, 0)); }
+
+	body->wakeUp();
+
 	mScene->simulate(1.0f/60.0f); // lock framerate of engine?
 	mScene->fetchResults(true);
 	
 	PxVec3 pos = body->getGlobalPose().p;
 	PxQuat rot = body->getGlobalPose().q;
 	entities[0]->GetTransform()->SetPosition(pos.x, pos.y, pos.z);
-	//entities[0]->GetTransform()->SetRotation(); // make a set rotation for euler angles
+	entities[0]->GetTransform()->SetRotationQuat(rot.x, rot.y, rot.z, rot.w); 
 }
 
 // --------------------------------------------------------

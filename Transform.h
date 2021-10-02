@@ -15,6 +15,7 @@ public:
 
 	void SetPosition(float x, float y, float z);
 	void SetRotation(float p, float y, float r);
+	void SetRotationQuat(float x, float y, float z, float w);
 	void SetScale(float x, float y, float z);
 
 	DirectX::XMFLOAT3 GetPosition();

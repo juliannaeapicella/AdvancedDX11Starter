@@ -162,7 +162,7 @@ void Renderer::Render(Camera* camera)
 	}
 
 	// Draw the light sources
-	DrawPointLights(camera);
+	//DrawPointLights(camera);
 
 	// Draw the sky
 	sky->Draw(camera);

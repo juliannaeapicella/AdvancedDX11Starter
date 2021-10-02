@@ -80,6 +80,12 @@ void Transform::SetRotation(float p, float y, float r)
 	MarkChildTransformsDirty();
 }
 
+void Transform::SetRotationQuat(float x, float y, float z, float w)
+{
+	XMFLOAT3 euler = QuatToEuler(XMFLOAT4(x, y, z, w));
+	SetRotation(euler.x, euler.y, euler.z);
+}
+
 void Transform::SetScale(float x, float y, float z)
 {
 	scale.x = x;
