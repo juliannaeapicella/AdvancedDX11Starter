@@ -68,7 +68,8 @@ private:
 
 	// Texture related resources
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerOptions;
-
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> clampSampler;
+	
 	// Skybox
 	Sky* sky;
 
@@ -83,6 +84,8 @@ private:
 	void GenerateLightsHeader(int i);
 	void GenerateCameraHeader();
 	void GenerateMaterialsHeader(int i, const char* textureTitles[]);
+	void GenerateSkyHeader();
+
 	std::string ConcatStringAndInt(std::string str, int i);
 	std::string ConcatStringAndFloat(std::string str, float f);
 

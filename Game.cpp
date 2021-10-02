@@ -149,6 +149,11 @@ void Game::LoadAssetsAndCreateEntities()
 	SimpleVertexShader* skyVS = LoadShader(SimpleVertexShader, L"SkyVS.cso");
 	SimplePixelShader* skyPS  = LoadShader(SimplePixelShader, L"SkyPS.cso");
 
+	SimpleVertexShader* fullscreenVS = LoadShader(SimpleVertexShader, L"FullscreenVS.cso");
+	SimplePixelShader* irradianceMapPS = LoadShader(SimplePixelShader, L"IBLIrradianceMapPS.cso");
+	SimplePixelShader* specularConvolutionPS = LoadShader(SimplePixelShader, L"IBLSpecularConvolutionPS.cso");
+	SimplePixelShader* lookUpTablePS = LoadShader(SimplePixelShader, L"IBLBrdfLookUpTablePS.cso");
+
 	shaders.push_back(vertexShader);
 	shaders.push_back(pixelShader);
 	shaders.push_back(pixelShaderPBR);
@@ -180,6 +185,12 @@ void Game::LoadAssetsAndCreateEntities()
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeA,  bronzeN,  bronzeR,  bronzeM;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> roughA,  roughN,  roughR,  roughM;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> woodA,  woodN,  woodR,  woodM;
+
+	// solid textures
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> solidA;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> solidN;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> solidM, solidNonM;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> solidR1, solidR2, solidR3;
 
 	// Load the textures using our succinct LoadTexture() macro
 	LoadTexture(L"../../Assets/Textures/cobblestone_albedo.png", cobbleA);
@@ -217,6 +228,14 @@ void Game::LoadAssetsAndCreateEntities()
 	LoadTexture(L"../../Assets/Textures/wood_roughness.png", woodR);
 	LoadTexture(L"../../Assets/Textures/wood_metal.png", woodM);
 
+	LoadTexture(L"../../Assets/Textures/white_albedo.png", solidA);
+	LoadTexture(L"../../Assets/Textures/solid_normal.png", solidN);
+	LoadTexture(L"../../Assets/Textures/solid_metal.png", solidM);
+	LoadTexture(L"../../Assets/Textures/solid_nonmetal.png", solidNonM);
+	LoadTexture(L"../../Assets/Textures/solid_rough1.png", solidR1);
+	LoadTexture(L"../../Assets/Textures/solid_rough2.png", solidR2);
+	LoadTexture(L"../../Assets/Textures/solid_rough3.png", solidR3);
+
 	textures.push_back(cobbleA); textures.push_back(cobbleN); textures.push_back(cobbleR); textures.push_back(cobbleM);
 	textures.push_back(floorA); textures.push_back(floorN); textures.push_back(floorR); textures.push_back(floorM);
 	textures.push_back(paintA); textures.push_back(paintN); textures.push_back(paintR); textures.push_back(paintM);
@@ -235,6 +254,15 @@ void Game::LoadAssetsAndCreateEntities()
 	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
 	device->CreateSamplerState(&sampDesc, samplerOptions.GetAddressOf());
 
+	D3D11_SAMPLER_DESC clampSampDesc = {};
+	clampSampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	clampSampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	clampSampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	clampSampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+	clampSampDesc.MaxAnisotropy = 16;
+	clampSampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	device->CreateSamplerState(&clampSampDesc, clampSampler.GetAddressOf());
+
 
 	// Create the sky using a DDS cube map
 	/*sky = new Sky(
@@ -248,27 +276,36 @@ void Game::LoadAssetsAndCreateEntities()
 
 	// Create the sky using 6 images
 	sky = new Sky(
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Night\\right.png").c_str(),
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Night\\left.png").c_str(),
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Night\\up.png").c_str(),
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Night\\down.png").c_str(),
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Night\\front.png").c_str(),
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Night\\back.png").c_str(),
+		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Clouds Pink\\right.png").c_str(),
+		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Clouds Pink\\left.png").c_str(),
+		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Clouds Pink\\up.png").c_str(),
+		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Clouds Pink\\down.png").c_str(),
+		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Clouds Pink\\front.png").c_str(),
+		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Clouds Pink\\back.png").c_str(),
 		cubeMesh,
 		skyVS,
 		skyPS,
+		fullscreenVS,
+		irradianceMapPS,
+		specularConvolutionPS,
+		lookUpTablePS,
 		samplerOptions,
 		device,
 		context);
 
+	delete fullscreenVS;
+	delete irradianceMapPS;
+	delete specularConvolutionPS;
+	delete lookUpTablePS;
+
 	// Create basic materials
-	Material* cobbleMat2x = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), cobbleA, cobbleN, cobbleR, cobbleM, samplerOptions);
-	Material* floorMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), floorA, floorN, floorR, floorM, samplerOptions);
-	Material* paintMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), paintA, paintN, paintR, paintM, samplerOptions);
-	Material* scratchedMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), scratchedA, scratchedN, scratchedR, scratchedM, samplerOptions);
-	Material* bronzeMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), bronzeA, bronzeN, bronzeR, bronzeM, samplerOptions);
-	Material* roughMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), roughA, roughN, roughR, roughM, samplerOptions);
-	Material* woodMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), woodA, woodN, woodR, woodM, samplerOptions);
+	Material* cobbleMat2x = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), cobbleA, cobbleN, cobbleR, cobbleM, samplerOptions, clampSampler);
+	Material* floorMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), floorA, floorN, floorR, floorM, samplerOptions, clampSampler);
+	Material* paintMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), paintA, paintN, paintR, paintM, samplerOptions, clampSampler);
+	Material* scratchedMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), scratchedA, scratchedN, scratchedR, scratchedM, samplerOptions, clampSampler);
+	Material* bronzeMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), bronzeA, bronzeN, bronzeR, bronzeM, samplerOptions, clampSampler);
+	Material* roughMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), roughA, roughN, roughR, roughM, samplerOptions, clampSampler);
+	Material* woodMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), woodA, woodN, woodR, woodM, samplerOptions, clampSampler);
 
 	materials.push_back(cobbleMat2x);
 	materials.push_back(floorMat);
@@ -279,13 +316,13 @@ void Game::LoadAssetsAndCreateEntities()
 	materials.push_back(woodMat);
 
 	// Create PBR materials
-	Material* cobbleMat2xPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), cobbleA, cobbleN, cobbleR, cobbleM, samplerOptions);
-	Material* floorMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), floorA, floorN, floorR, floorM, samplerOptions);
-	Material* paintMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), paintA, paintN, paintR, paintM, samplerOptions);
-	Material* scratchedMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), scratchedA, scratchedN, scratchedR, scratchedM, samplerOptions);
-	Material* bronzeMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), bronzeA, bronzeN, bronzeR, bronzeM, samplerOptions);
-	Material* roughMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), roughA, roughN, roughR, roughM, samplerOptions);
-	Material* woodMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), woodA, woodN, woodR, woodM, samplerOptions);
+	Material* cobbleMat2xPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), cobbleA, cobbleN, cobbleR, cobbleM, samplerOptions, clampSampler);
+	Material* floorMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), floorA, floorN, floorR, floorM, samplerOptions, clampSampler);
+	Material* paintMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), paintA, paintN, paintR, paintM, samplerOptions, clampSampler);
+	Material* scratchedMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), scratchedA, scratchedN, scratchedR, scratchedM, samplerOptions, clampSampler);
+	Material* bronzeMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), bronzeA, bronzeN, bronzeR, bronzeM, samplerOptions, clampSampler);
+	Material* roughMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), roughA, roughN, roughR, roughM, samplerOptions, clampSampler);
+	Material* woodMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), woodA, woodN, woodR, woodM, samplerOptions, clampSampler);
 
 	materials.push_back(cobbleMat2xPBR);
 	materials.push_back(floorMatPBR);
@@ -295,7 +332,50 @@ void Game::LoadAssetsAndCreateEntities()
 	materials.push_back(roughMatPBR);
 	materials.push_back(woodMatPBR);
 
+	Material* solidMetalMaterialR1 = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), solidA, solidN, solidM, solidR1, samplerOptions, clampSampler);
+	Material* solidMetalMaterialR2 = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), solidA, solidN, solidM, solidR2, samplerOptions, clampSampler);
+	Material* solidMetalMaterialR3 = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), solidA, solidN, solidM, solidR3, samplerOptions, clampSampler);
+	Material* solidMaterialR1 = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), solidA, solidN, solidNonM, solidR1, samplerOptions, clampSampler);
+	Material* solidMaterialR2 = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), solidA, solidN, solidNonM, solidR2, samplerOptions, clampSampler);
+	Material* solidMaterialR3 = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, XMFLOAT2(2, 2), solidA, solidN, solidNonM, solidR3, samplerOptions, clampSampler);
 
+	materials.push_back(solidMetalMaterialR1);
+	materials.push_back(solidMetalMaterialR2);
+	materials.push_back(solidMetalMaterialR3);
+	materials.push_back(solidMaterialR1);
+	materials.push_back(solidMaterialR2);
+	materials.push_back(solidMaterialR3);
+
+	GameEntity* solidMetalSphereR1 = new GameEntity(sphereMesh, solidMetalMaterialR1);
+	solidMetalSphereR1->GetTransform()->SetScale(2, 2, 2);
+	solidMetalSphereR1->GetTransform()->SetPosition(-2, 1, 0);
+
+	GameEntity* solidMetalSphereR2 = new GameEntity(sphereMesh, solidMetalMaterialR2);
+	solidMetalSphereR2->GetTransform()->SetScale(2, 2, 2);
+	solidMetalSphereR2->GetTransform()->SetPosition(0, 1, 0);
+	
+	GameEntity* solidMetalSphereR3 = new GameEntity(sphereMesh, solidMetalMaterialR3);
+	solidMetalSphereR3->GetTransform()->SetScale(2, 2, 2);
+	solidMetalSphereR3->GetTransform()->SetPosition(2, 1, 0);
+
+	GameEntity* solidSphereR1 = new GameEntity(sphereMesh, solidMaterialR1);
+	solidSphereR1->GetTransform()->SetScale(2, 2, 2);
+	solidSphereR1->GetTransform()->SetPosition(-2, -1, 0);
+
+	GameEntity* solidSphereR2 = new GameEntity(sphereMesh, solidMaterialR2);
+	solidSphereR2->GetTransform()->SetScale(2, 2, 2);
+	solidSphereR2->GetTransform()->SetPosition(0, -1, 0);
+
+	GameEntity* solidSphereR3 = new GameEntity(sphereMesh, solidMaterialR3);
+	solidSphereR3->GetTransform()->SetScale(2, 2, 2);
+	solidSphereR3->GetTransform()->SetPosition(2, -1, 0);
+
+	entities.push_back(solidMetalSphereR1);
+	entities.push_back(solidMetalSphereR2);
+	entities.push_back(solidMetalSphereR3);
+	entities.push_back(solidSphereR1);
+	entities.push_back(solidSphereR2);
+	entities.push_back(solidSphereR3);
 
 	// === Create the PBR entities =====================================
 	/*GameEntity* cobSpherePBR = new GameEntity(sphereMesh, cobbleMat2xPBR);
@@ -332,10 +412,10 @@ void Game::LoadAssetsAndCreateEntities()
 	entities.push_back(scratchSpherePBR);
 	entities.push_back(bronzeSpherePBR);
 	entities.push_back(roughSpherePBR);
-	entities.push_back(woodSpherePBR);
+	entities.push_back(woodSpherePBR);*/
 
 	// Create the non-PBR entities ==============================
-	GameEntity* cobSphere = new GameEntity(sphereMesh, cobbleMat2x);
+	/*GameEntity* cobSphere = new GameEntity(sphereMesh, cobbleMat2x);
 	cobSphere->GetTransform()->SetScale(2, 2, 2);
 	cobSphere->GetTransform()->SetPosition(-6, -2, 0);
 
@@ -370,36 +450,6 @@ void Game::LoadAssetsAndCreateEntities()
 	entities.push_back(bronzeSphere);
 	entities.push_back(roughSphere);
 	entities.push_back(woodSphere);*/
-
-	GameEntity* cobSpherePBR = new GameEntity(sphereMesh, cobbleMat2xPBR);
-	cobSpherePBR->GetTransform()->SetScale(3, 3, 3);
-	cobSpherePBR->GetTransform()->SetPosition(0, 0, 0);
-	
-	GameEntity* floorSpherePBR = new GameEntity(sphereMesh, floorMatPBR);
-	floorSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	floorSpherePBR->GetTransform()->SetPosition(4, 0, 0);
-
-	GameEntity* scratchSpherePBR = new GameEntity(sphereMesh, scratchedMatPBR);
-	scratchSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	scratchSpherePBR->GetTransform()->SetPosition(-4, 0, 0);
-
-	GameEntity* bronzeSpherePBR = new GameEntity(sphereMesh, bronzeMatPBR);
-	bronzeSpherePBR->GetTransform()->SetPosition(6, 0, 0);
-
-	GameEntity* paintSpherePBR = new GameEntity(sphereMesh, paintMatPBR);
-	paintSpherePBR->GetTransform()->SetScale(0.5, 0.5, 0.5);
-	paintSpherePBR->GetTransform()->SetPosition(6, 1, 0);
-
-	cobSpherePBR->GetTransform()->AddChild(floorSpherePBR->GetTransform());
-	cobSpherePBR->GetTransform()->AddChild(scratchSpherePBR->GetTransform());
-	floorSpherePBR->GetTransform()->AddChild(bronzeSpherePBR->GetTransform());
-	bronzeSpherePBR->GetTransform()->AddChild(paintSpherePBR->GetTransform());
-
-	entities.push_back(cobSpherePBR);
-	entities.push_back(floorSpherePBR);
-	entities.push_back(scratchSpherePBR);
-	entities.push_back(bronzeSpherePBR);
-	entities.push_back(paintSpherePBR);
 
 	// Save assets needed for drawing point lights
 	// (Since these are just copies of the pointers,
@@ -462,7 +512,7 @@ void Game::GenerateLights()
 	lights.push_back(dir3);
 
 	// Create the rest of the lights
-	while (lights.size() < lightCount)
+	/*while (lights.size() < lightCount)
 	{
 		Light point = {};
 		point.Type = LIGHT_TYPE_POINT;
@@ -473,7 +523,7 @@ void Game::GenerateLights()
 
 		// Add to the list
 		lights.push_back(point);
-	}
+	}*/
 
 }
 
@@ -514,14 +564,6 @@ void Game::Update(float deltaTime, float totalTime)
 	if (yPos == 2 || yPos == -2) {
 		interval = -interval;
 	}
-
-	// move entities
-	entities[0]->GetTransform()->MoveRelative(0.001, 0, 0);
-	entities[0]->GetTransform()->MoveAbsolute(0, interval, 0);
-	entities[0]->GetTransform()->Rotate(0, 0.005, 0);
-	entities[1]->GetTransform()->Rotate(0, 0.02, 0);
-	entities[2]->GetTransform()->Rotate(0, 0.01, 0);
-	entities[3]->GetTransform()->Rotate(0.02, 0, 0);
 
 	//update the GUI
 	UpdateGUI(deltaTime, input);
@@ -667,6 +709,8 @@ void Game::UpdateSceneWindow()
 			GenerateMaterialsHeader(i, textureTitles);
 		}
 	}
+
+	GenerateSkyHeader();
 
 	ImGui::End();
 }
@@ -822,6 +866,21 @@ void Game::GenerateMaterialsHeader(int i, const char* textureTitles[])
 		int currentMetal = FindIndex(textures, materials[i]->GetMetal());
 		ImGui::Combo(ConcatStringAndInt("Metal##Ma", i).c_str(), &currentMetal, textureTitles, textures.size());
 		materials[i]->SetMetal(textures[currentMetal]);
+	}
+}
+
+void Game::GenerateSkyHeader()
+{
+	if (ImGui::CollapsingHeader("Sky")) {
+		ImVec2 size = ImVec2(100, 100);
+		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
+		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
+		ImVec4 tint_col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);   // No tint
+		ImVec4 border_col = ImVec4(1.0f, 1.0f, 1.0f, 0.5f); // 50% opaque white
+
+		ImGui::Text("BRDF Look Up Map: ");
+		ImTextureID texture = sky->GetBRDFLookUpTexture().Get();
+		ImGui::Image(texture, size, uv_min, uv_max, tint_col, border_col);
 	}
 }
 

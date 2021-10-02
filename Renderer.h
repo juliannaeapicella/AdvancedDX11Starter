@@ -19,6 +19,7 @@ struct PSPerFrameData
 	Light Lights[MAX_LIGHTS];
 	int LightCount;
 	DirectX::XMFLOAT3 CameraPosition;
+	int SpecIBLTotalMipLevels;
 };
 
 class Renderer
@@ -70,5 +71,5 @@ private:
 	PSPerFrameData psPerFrameData;
 	VSPerFrameData vsPerFrameData;
 
-	void DrawPointLights(Camera* camera);
+	void DrawPointLights(Camera* camera); // fix this interfacing with ImGui at some point
 };

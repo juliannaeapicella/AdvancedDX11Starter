@@ -15,6 +15,9 @@ cbuffer perFrame : register(b0)
 
 	// Needed for specular (reflection) calculation
 	float3 CameraPosition;
+
+	// mip levels in IBL cube map
+	int SpecIBLTotalMipLevels;
 };
 
 // Data that can change per material
@@ -41,7 +44,15 @@ Texture2D AlbedoTexture			: register(t0);
 Texture2D NormalTexture			: register(t1);
 Texture2D RoughnessTexture		: register(t2);
 Texture2D MetalTexture			: register(t3);
-SamplerState BasicSampler		: register(s0);
+
+// IBL (indirect PBR) textures
+Texture2D BrdfLookUpMap         : register(t4); 
+TextureCube IrradianceIBLMap    : register(t5); 
+TextureCube SpecularIBLMap      : register(t6);
+
+// Samplers
+SamplerState BasicSampler       : register(s0);
+SamplerState ClampSampler       : register(s1);
 
 
 // Entry point for this pixel shader
@@ -87,6 +98,30 @@ float4 main(VertexToPixel input) : SV_TARGET
 			break;
 		}
 	}
+
+	// Calculate requisite reflection vectors
+	float3 viewToCam = normalize(CameraPosition - input.worldPos);
+	float3 viewRefl = normalize(reflect(-viewToCam, input.normal));
+	float NdotV = saturate(dot(input.normal, viewToCam));
+	
+	// Indirect lighting
+	float3 indirectDiffuse = IndirectDiffuse(IrradianceIBLMap, BasicSampler, input.normal);
+	float3 indirectSpecular = IndirectSpecular(
+		SpecularIBLMap, 
+		SpecIBLTotalMipLevels,
+		BrdfLookUpMap, 
+		ClampSampler, // MUST use the clamp sampler here!
+		viewRefl, 
+		NdotV,
+		roughness, 
+		specColor);
+	
+	// Balance indirect diff/spec
+	float3 balancedDiff = DiffuseEnergyConserve(indirectDiffuse, indirectSpecular, metal);
+	float3 fullIndirect = indirectSpecular + balancedDiff * surfaceColor.rgb;
+	
+	// Add the indirect to the direct
+	totalColor += fullIndirect;
 
 	// Gamma correction
 	return float4(pow(totalColor, 1.0f / 2.2f), 1);

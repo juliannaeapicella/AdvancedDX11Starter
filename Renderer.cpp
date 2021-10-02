@@ -102,6 +102,7 @@ void Renderer::Render(Camera* camera)
 		memcpy(&psPerFrameData.Lights, &lights[0], sizeof(Light) * lightCount);
 		psPerFrameData.LightCount = lightCount;
 		psPerFrameData.CameraPosition = camera->GetTransform()->GetPosition();
+		psPerFrameData.SpecIBLTotalMipLevels = sky->GetMipLevels();
 		context->UpdateSubresource(psPerFrameConstantBuffer.Get(), 0, 0, &psPerFrameData, 0, 0);
 	}
 
@@ -132,6 +133,9 @@ void Renderer::Render(Camera* camera)
 			// swap pixel shader if necessary
 			if (currentPS != currentMaterial->GetPS()) {
 				currentPS = currentMaterial->GetPS();
+				currentPS->SetShaderResourceView("BrdfLookUpMap", sky->GetBRDFLookUpTexture());
+				currentPS->SetShaderResourceView("IrradianceIBLMap", sky->GetIrradianceMap());
+				currentPS->SetShaderResourceView("SpecularIBLMap", sky->GetConvolvedSpecularMap());
 				currentPS->SetShader();
 
 				context->PSSetConstantBuffers(0, 1, psPerFrameConstantBuffer.GetAddressOf());
