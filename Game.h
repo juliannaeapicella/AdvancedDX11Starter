@@ -11,6 +11,7 @@
 #include "Lights.h"
 #include "Sky.h"
 #include "Input.h"
+#include "Marble.h"
 
 #include <PxPhysics.h>
 #include <PxPhysicsAPI.h>
@@ -54,6 +55,8 @@ private:
 	std::vector<ISimpleShader*> shaders;
 	Camera* camera;
 	Renderer* renderer;
+
+	Marble* marble;
 
 	// Lights
 	std::vector<Light> lights;
@@ -105,8 +108,6 @@ private:
 
 	physx::PxScene* mScene;
 	physx::PxMaterial* mMaterial;
-
-	physx::PxRigidDynamic* body;
 };
 
 /// <summary>

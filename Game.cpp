@@ -81,6 +81,7 @@ Game::~Game()
 	delete renderer;
 	delete arial;
 	delete spriteBatch;
+	delete marble;
 
 	// Delete singletons
 	delete& Input::GetInstance();
@@ -161,13 +162,7 @@ void Game::Init()
 	PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, physx::PxPlane(0, 1, 0, 2.5), *mMaterial);
 	mScene->addActor(*groundPlane);
 
-	// add sphere
-	PxShape* shape = mPhysics->createShape(PxSphereGeometry(1.0f), *mMaterial, true);
-	body = mPhysics->createRigidDynamic(PxTransform(PxVec3(0, 5, 0)));
-	body->attachShape(*shape);
-	PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
-	mScene->addActor(*body);
-	shape->release();
+	marble = new Marble(mPhysics, mScene, mMaterial, entities[0]);
 }
 
 
@@ -530,20 +525,12 @@ void Game::Update(float deltaTime, float totalTime)
 	if (input.KeyPress(VK_TAB)) GenerateLights();
 
 	// PhysX
-	if (input.KeyDown('W')) { body->addForce(PxVec3(0, 0, 5)); }
-	if (input.KeyDown('S')) { body->addForce(PxVec3(0, 0, -5)); }
-	if (input.KeyDown('A')) { body->addForce(PxVec3(-5, 0, 0)); }
-	if (input.KeyDown('D')) { body->addForce(PxVec3(5, 0, 0)); }
+	marble->Move(input);
 
-	body->wakeUp();
+	mScene->simulate(1.0f/60.0f);
+	mScene->fetchResults(true); 
 
-	mScene->simulate(1.0f/60.0f); // lock framerate of engine?
-	mScene->fetchResults(true);
-	
-	PxVec3 pos = body->getGlobalPose().p;
-	PxQuat rot = body->getGlobalPose().q;
-	entities[0]->GetTransform()->SetPosition(pos.x, pos.y, pos.z);
-	entities[0]->GetTransform()->SetRotationQuat(rot.x, rot.y, rot.z, rot.w); 
+	marble->UpdateEntity();
 }
 
 // --------------------------------------------------------

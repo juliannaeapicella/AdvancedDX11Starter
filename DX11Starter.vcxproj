@@ -148,6 +148,7 @@
     <ClCompile Include="ImGUI\imgui_widgets.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Marble.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Renderer.cpp" />
@@ -170,6 +171,7 @@
     <ClInclude Include="ImGUI\imstb_truetype.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="Lights.h" />
+    <ClInclude Include="Marble.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Renderer.h" />
