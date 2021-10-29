@@ -24,10 +24,10 @@ Marble::~Marble() {}
 
 void Marble::Move(Input& input)
 {
-	if (input.KeyDown('W')) { body->addForce(PxVec3(0, 0, 1)); }
-	if (input.KeyDown('S')) { body->addForce(PxVec3(0, 0, -1)); }
-	if (input.KeyDown('A')) { body->addForce(PxVec3(-1, 0, 0)); }
-	if (input.KeyDown('D')) { body->addForce(PxVec3(1, 0, 0)); }
+	if (input.KeyDown('W')) { body->addForce(PxVec3(0, 0, 2)); }
+	if (input.KeyDown('S')) { body->addForce(PxVec3(0, 0, -2)); }
+	if (input.KeyDown('A')) { body->addForce(PxVec3(-2, 0, 0)); }
+	if (input.KeyDown('D')) { body->addForce(PxVec3(2, 0, 0)); }
 
 	// prevent this rigid body from sleeping so it rolls even when not directly pushed
 	body->wakeUp();
@@ -41,4 +41,9 @@ void Marble::UpdateEntity()
 
 	entity->GetTransform()->SetPosition(pos.x, pos.y, pos.z);
 	entity->GetTransform()->SetRotationQuat(rot.x, rot.y, rot.z, rot.w);
+}
+
+GameEntity* Marble::GetEntity()
+{
+	return entity;
 }

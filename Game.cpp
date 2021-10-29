@@ -125,7 +125,20 @@ void Game::Init()
 		1.0f,		// Mouse look
 		this->width / (float)this->height); // Aspect ratio
 
-	camera->GetTransform()->SetRotation(0.3, 0, 0);
+	// get vector from camera to entity
+	XMFLOAT3 entityPos = entities[0]->GetTransform()->GetPosition();
+	XMFLOAT3 cameraPos = camera->GetTransform()->GetPosition();
+
+	XMFLOAT3 camToEntity;
+	XMStoreFloat3(&camToEntity, XMLoadFloat3(&entityPos) - XMLoadFloat3(&cameraPos));
+
+	// find rotation transform vector for new orientation
+	float yaw = atan2(camToEntity.x, camToEntity.z);
+
+	float pthg = sqrt(pow(camToEntity.x, 2) + pow(camToEntity.z, 2));
+	float pitch = atan2(pthg, camToEntity.y);
+
+	camera->GetTransform()->SetRotation(pitch, yaw, 0);
 	camera->Update(0.0f);
 
 	interval = 0.005;
@@ -518,7 +531,7 @@ void Game::Update(float deltaTime, float totalTime)
 	UpdateGUI(deltaTime, input);
 
 	// Update the camera
-	//camera->Update(deltaTime);
+	camera->Update(0.0f);
 
 	// Check individual input
 	if (input.KeyDown(VK_ESCAPE)) Quit();

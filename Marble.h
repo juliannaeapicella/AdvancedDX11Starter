@@ -14,6 +14,8 @@ public:
 
 	void Move(Input& input);
 	void UpdateEntity();
+
+	GameEntity* GetEntity();
 private:
 	physx::PxRigidDynamic* body;
 	GameEntity* entity;

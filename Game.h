@@ -4,6 +4,7 @@
 #include "Mesh.h"
 #include "GameEntity.h"
 #include "Camera.h"
+#include "ThirdPersonCamera.h"
 #include "Renderer.h"
 #include "SimpleShader.h"
 #include "SpriteFont.h"
