@@ -85,6 +85,7 @@ private:
 	void GenerateCameraHeader();
 	void GenerateMaterialsHeader(int i, const char* textureTitles[]);
 	void GenerateSkyHeader();
+	void GenerateMRTHeader();
 
 	std::string ConcatStringAndInt(std::string str, int i);
 	std::string ConcatStringAndFloat(std::string str, float f);

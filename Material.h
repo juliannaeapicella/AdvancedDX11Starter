@@ -16,6 +16,7 @@ public:
 		SimplePixelShader* ps, 
 		DirectX::XMFLOAT4 color, 
 		float shininess, 
+		bool isRefractive,
 		DirectX::XMFLOAT2 uvScale, 
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> albedo, 
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> normals, 
@@ -43,6 +44,7 @@ public:
 
 	void SetColor(DirectX::XMFLOAT4 color) { this->color = color; }
 	void SetShininess(float shininess) { this->shininess = shininess; }
+	void SetRefractive(bool isRefractive) { this->isRefractive = isRefractive; }
 
 	void SetAlbedo(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> albedoSRV) { this->albedoSRV = albedoSRV; }
 	void SetNormal(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> normalSRV) { this->normalSRV = normalSRV; }
@@ -58,6 +60,7 @@ private:
 	DirectX::XMFLOAT2 uvScale;
 	DirectX::XMFLOAT4 color;
 	float shininess;
+	bool isRefractive;
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> albedoSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> normalSRV;

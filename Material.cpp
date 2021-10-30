@@ -7,6 +7,7 @@ Material::Material(
 	SimplePixelShader* ps,
 	DirectX::XMFLOAT4 color,
 	float shininess,
+	bool isRefractive,
 	DirectX::XMFLOAT2 uvScale,
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> albedo,
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> normals,
@@ -19,6 +20,7 @@ Material::Material(
 	this->ps = ps;
 	this->color = color;
 	this->shininess = shininess;
+	this->isRefractive = isRefractive;
 	this->albedoSRV = albedo;
 	this->normalSRV = normals;
 	this->roughnessSRV = roughness;
