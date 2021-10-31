@@ -54,6 +54,7 @@ private:
 	SimplePixelShader* pixelShader;
 	SimplePixelShader* pixelShaderPBR;
 	std::vector<ISimpleShader*> shaders;
+	ThirdPersonCamera* thirdPCamera;
 	Camera* camera;
 	Renderer* renderer;
 

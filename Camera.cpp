@@ -33,12 +33,12 @@ void Camera::Update(float dt)
 	if (input.KeyDown(VK_CONTROL)) { speed *= 0.1f; }
 
 	// Movement
-	if (input.KeyDown('W')) { transform.MoveRelative(0, 0, speed); }
+	/*if (input.KeyDown('W')) { transform.MoveRelative(0, 0, speed); }
 	if (input.KeyDown('S')) { transform.MoveRelative(0, 0, -speed); }
 	if (input.KeyDown('A')) { transform.MoveRelative(-speed, 0, 0); }
 	if (input.KeyDown('D')) { transform.MoveRelative(speed, 0, 0); }
 	if (input.KeyDown('X')) { transform.MoveAbsolute(0, -speed, 0); }
-	if (input.KeyDown(' ')) { transform.MoveAbsolute(0, speed, 0); }
+	if (input.KeyDown(' ')) { transform.MoveAbsolute(0, speed, 0); }*/
 
 	// Handle mouse movement only when button is down
 	if (input.MouseLeftDown())
@@ -51,7 +51,6 @@ void Camera::Update(float dt)
 
 	// Update the view every frame - could be optimized
 	UpdateViewMatrix();
-
 }
 
 // Creates a new view matrix based on current position and orientation

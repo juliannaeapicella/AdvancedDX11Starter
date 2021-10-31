@@ -77,7 +77,7 @@ Game::~Game()
 
 	// Delete any one-off objects
 	delete sky;
-	delete camera;
+	delete thirdPCamera;
 	delete renderer;
 	delete arial;
 	delete spriteBatch;
@@ -119,27 +119,9 @@ void Game::Init()
 	GenerateLights();
 
 	// Make our camera
-	camera = new Camera(
-		0, 5, -20,	// Position
-		3.0f,		// Move speed
-		1.0f,		// Mouse look
-		this->width / (float)this->height); // Aspect ratio
+	thirdPCamera = new ThirdPersonCamera(entities[0], this->width / (float)this->height);
 
-	// get vector from camera to entity
-	XMFLOAT3 entityPos = entities[0]->GetTransform()->GetPosition();
-	XMFLOAT3 cameraPos = camera->GetTransform()->GetPosition();
-
-	XMFLOAT3 camToEntity;
-	XMStoreFloat3(&camToEntity, XMLoadFloat3(&entityPos) - XMLoadFloat3(&cameraPos));
-
-	// find rotation transform vector for new orientation
-	float yaw = atan2(camToEntity.x, camToEntity.z);
-
-	float pthg = sqrt(pow(camToEntity.x, 2) + pow(camToEntity.z, 2));
-	float pitch = atan2(pthg, camToEntity.y);
-
-	camera->GetTransform()->SetRotation(pitch, yaw, 0);
-	camera->Update(0.0f);
+	camera = thirdPCamera->GetCamera();
 
 	interval = 0.005;
 
@@ -531,7 +513,7 @@ void Game::Update(float deltaTime, float totalTime)
 	UpdateGUI(deltaTime, input);
 
 	// Update the camera
-	camera->Update(0.0f);
+	thirdPCamera->Update(deltaTime);
 
 	// Check individual input
 	if (input.KeyDown(VK_ESCAPE)) Quit();

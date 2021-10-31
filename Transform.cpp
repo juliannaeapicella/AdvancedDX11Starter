@@ -2,7 +2,6 @@
 
 using namespace DirectX;
 
-
 Transform::Transform()
 {
 	// Start with an identity matrix and basic transform data
@@ -236,6 +235,8 @@ void Transform::UpdateMatrices()
 
 		// All set
 		matricesDirty = false;
+
+		MarkChildTransformsDirty();
 	}
 }
 

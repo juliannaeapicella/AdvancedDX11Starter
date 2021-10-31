@@ -29,6 +29,8 @@ public:
 	void RemoveChild(Transform* child);
 	void SetParent(Transform* newParent);
 
+	void SetTransformsFromMatrix(DirectX::XMFLOAT4X4 worldMatrix);
+
 	Transform* GetParent();
 	Transform* GetChild(unsigned int index);
 	int IndexOfChild(Transform* child);
@@ -53,7 +55,6 @@ private:
 
 	void MarkChildTransformsDirty();
 
-	void SetTransformsFromMatrix(DirectX::XMFLOAT4X4 worldMatrix);
 	DirectX::XMFLOAT3 QuatToEuler(DirectX::XMFLOAT4 quat);
 };
 
