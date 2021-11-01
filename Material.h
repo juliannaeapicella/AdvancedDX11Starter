@@ -33,6 +33,7 @@ public:
 
 	DirectX::XMFLOAT4 GetColor() { return color; }
 	float GetShininess() { return shininess; }
+	bool IsRefractive() { return isRefractive; }
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetAlbedo() { return albedoSRV; }
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetNormal() { return normalSRV; }

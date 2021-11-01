@@ -145,6 +145,7 @@ void Game::LoadAssetsAndCreateEntities()
 	pixelShader							= LoadShader(SimplePixelShader, L"PixelShader.cso");
 	pixelShaderPBR						= LoadShader(SimplePixelShader, L"PixelShaderPBR.cso");
 	SimplePixelShader* solidColorPS		= LoadShader(SimplePixelShader, L"SolidColorPS.cso");
+	SimplePixelShader* refractionPS     = LoadShader(SimplePixelShader, L"RefractionPS.cso");
 	
 	SimpleVertexShader* skyVS = LoadShader(SimpleVertexShader, L"SkyVS.cso");
 	SimplePixelShader* skyPS  = LoadShader(SimplePixelShader, L"SkyPS.cso");
@@ -473,7 +474,10 @@ void Game::LoadAssetsAndCreateEntities()
 		lightMesh,
 		lightVS,
 		lightPS,
-		pixelShaderPBR
+		pixelShaderPBR,
+		fullscreenVS,
+		solidColorPS,
+		refractionPS
 	);
 }
 

@@ -23,7 +23,10 @@ Renderer::Renderer(
 	Mesh* lightMesh,
 	SimpleVertexShader* lightVS,
 	SimplePixelShader* lightPS,
-	SimplePixelShader* PBRShader) :
+	SimplePixelShader* PBRShader,
+	SimpleVertexShader* fullscreenVS,
+	SimplePixelShader* solidColorPS,
+	SimplePixelShader* refractionPS) :
 		device(device),
 		context(context),
 		swapChain(swapChain),
@@ -36,7 +39,14 @@ Renderer::Renderer(
 		lights(lights),
 		lightMesh(lightMesh), 
 		lightVS(lightVS),
-		lightPS(lightPS) {
+		lightPS(lightPS),
+		refractionScale(0.1f),
+		useRefractionSilhouette(false),
+		refractionFromNormalMap(true),
+		indexOfRefraction(0.5f),
+		fullscreenVS(fullscreenVS),
+		solidColorPS(solidColorPS),
+		refractionPS(refractionPS) {
 
 	// initialize structs
 	vsPerFrameData = {};
@@ -59,6 +69,14 @@ Renderer::Renderer(
 	CreateRenderTarget(windowWidth, windowHeight, sceneColorsRTV, sceneColorsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneNormalsRTV, sceneNormalsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneDepthsRTV, sceneDepthsSRV);
+	CreateRenderTarget(windowWidth, windowHeight, sceneCompositeRTV, sceneCompositeSRV);
+	CreateRenderTarget(windowWidth, windowHeight, silhouetteRTV, silhouetteSRV);
+
+	D3D11_DEPTH_STENCIL_DESC depthDesc = {};
+	depthDesc.DepthEnable = true;
+	depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	device->CreateDepthStencilState(&depthDesc, refractionSilhouetteDepthState.GetAddressOf());
 }
 
 Renderer::~Renderer() {}
@@ -91,6 +109,8 @@ void Renderer::PostResize(
 	CreateRenderTarget(windowWidth, windowHeight, sceneColorsRTV, sceneColorsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneNormalsRTV, sceneNormalsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneDepthsRTV, sceneDepthsSRV);
+	CreateRenderTarget(windowWidth, windowHeight, sceneCompositeRTV, sceneCompositeSRV);
+	CreateRenderTarget(windowWidth, windowHeight, silhouetteRTV, silhouetteSRV);
 }
 
 void Renderer::Render(Camera* camera)
@@ -139,12 +159,22 @@ void Renderer::Render(Camera* camera)
 		return e1->GetMaterial() < e2->GetMaterial();
 		});
 
+	// Collect all refractive entities for later
+	std::vector<GameEntity*> refractiveEntities;
+
 	// draw entities
 	SimpleVertexShader* currentVS = 0;
 	SimplePixelShader* currentPS = 0;
 	Material* currentMaterial = 0;
 	Mesh* currentMesh = 0;
 	for (auto ge : toDraw) {
+		// skip refractive materials
+		if (ge->GetMaterial()->IsRefractive())
+		{
+			refractiveEntities.push_back(ge);
+			continue;
+		}
+
 		// track current material
 		if (currentMaterial != ge->GetMaterial()) {
 			currentMaterial = ge->GetMaterial();
@@ -198,8 +228,86 @@ void Renderer::Render(Camera* camera)
 	// Draw the sky
 	sky->Draw(camera);
 
-	// Re-enable back buffer
-	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), 0);
+	fullscreenVS->SetShader();
+
+	// Loop and render the refractive objects to the silhouette texture (if use silhouettes)
+	if (useRefractionSilhouette)
+	{
+		renderTargets[0] = silhouetteRTV.Get();
+		context->OMSetRenderTargets(1, renderTargets, depthBufferDSV.Get());
+
+		// Depth state
+		context->OMSetDepthStencilState(refractionSilhouetteDepthState.Get(), 0);
+
+		// Loop and draw each one
+		for (auto ge : refractiveEntities)
+		{
+			// Get this material and sub the refraction PS for now
+			Material* mat = ge->GetMaterial();
+			SimplePixelShader* prevPS = mat->GetPS();
+			mat->SetPS(solidColorPS);
+
+			// Overall material prep
+			mat->PrepareMaterial(ge->GetTransform(), camera);
+			mat->SetPerMaterialDataAndResources(true);
+
+			// Set up the refraction specific data
+			solidColorPS->SetFloat3("Color", XMFLOAT3(1, 1, 1));
+			solidColorPS->CopyBufferData("externalData");
+
+			// Reset "per frame" buffer for VS
+			context->VSSetConstantBuffers(0, 1, vsPerFrameConstantBuffer.GetAddressOf());
+
+			// Draw
+			ge->GetMesh()->SetBuffersAndDraw(context);
+
+			// Reset this material's PS
+			mat->SetPS(prevPS);
+		}
+
+		// Reset depth state
+		context->OMSetDepthStencilState(0, 0);
+	}
+
+	// now draw refractive objects
+	renderTargets[0] = backBufferRTV.Get();
+	context->OMSetRenderTargets(1, renderTargets, depthBufferDSV.Get());
+
+	for (auto ge : refractiveEntities)
+	{
+		Material* material = ge->GetMaterial();
+		SimplePixelShader* prevPS = material->GetPS();
+		material->SetPS(refractionPS);
+
+		// Overall material prep
+		material->PrepareMaterial(ge->GetTransform(), camera);
+		material->SetPerMaterialDataAndResources(true);
+
+		// Set up the refraction specific data
+		refractionPS->SetFloat2("screenSize", XMFLOAT2((float)windowWidth, (float)windowHeight));
+		refractionPS->SetMatrix4x4("viewMatrix", camera->GetView());
+		refractionPS->SetMatrix4x4("projMatrix", camera->GetProjection());
+		refractionPS->SetInt("useRefractionSilhouette", useRefractionSilhouette);
+		refractionPS->SetInt("refractionFromNormalMap", refractionFromNormalMap);
+		refractionPS->SetFloat("indexOfRefraction", indexOfRefraction);
+		refractionPS->SetFloat("refractionScale", refractionScale);
+		refractionPS->CopyBufferData("perObject");
+
+		// Set textures
+		refractionPS->SetShaderResourceView("ScreenPixels", sceneCompositeSRV);
+		refractionPS->SetShaderResourceView("RefractionSilhouette", silhouetteSRV);
+		refractionPS->SetShaderResourceView("EnvironmentMap", sky->GetSkySRV());
+
+		// Reset "per frame" buffers
+		context->VSSetConstantBuffers(0, 1, vsPerFrameConstantBuffer.GetAddressOf());
+		context->PSSetConstantBuffers(0, 1, psPerFrameConstantBuffer.GetAddressOf());
+
+		// Draw
+		ge->GetMesh()->SetBuffersAndDraw(context);
+
+		// Reset this material's PS
+		material->SetPS(prevPS);
+	}
 
 	// Draw ImGui
 	ImGui::Render();
@@ -213,6 +321,9 @@ void Renderer::Render(Camera* camera)
 	// Due to the usage of a more sophisticated swap chain,
 	// the render target must be re-bound after every call to Present()
 	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthBufferDSV.Get());
+
+	ID3D11ShaderResourceView* nullSRVs[16] = {};
+	context->PSSetShaderResources(0, 16, nullSRVs);
 }
 
 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Renderer::GetColorsRenderTargetSRV()

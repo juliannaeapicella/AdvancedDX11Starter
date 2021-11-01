@@ -39,7 +39,10 @@ public:
 		Mesh* lightMesh,
 		SimpleVertexShader* lightVS,
 		SimplePixelShader* lightPS,
-		SimplePixelShader* PBRShader);
+		SimplePixelShader* PBRShader,
+		SimpleVertexShader* fullscreenVS,
+		SimplePixelShader* solidColorPS,
+		SimplePixelShader* refractionPS);
 	~Renderer();
 
 	void PreResize();
@@ -61,10 +64,24 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> sceneColorsRTV;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> sceneNormalsRTV;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> sceneDepthsRTV;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> sceneCompositeRTV;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> silhouetteRTV;
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sceneColorsSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sceneNormalsSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sceneDepthsSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sceneCompositeSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> silhouetteSRV;
+
+	SimpleVertexShader* fullscreenVS; // add these to constructor
+	SimplePixelShader* solidColorPS;
+	SimplePixelShader* refractionPS;
+
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> refractionSilhouetteDepthState;
+	bool useRefractionSilhouette;
+	bool refractionFromNormalMap;
+	float indexOfRefraction;
+	float refractionScale;
 
 	unsigned int windowWidth;
 	unsigned int windowHeight;
