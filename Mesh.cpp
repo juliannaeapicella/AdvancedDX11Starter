@@ -74,11 +74,10 @@ Mesh::Mesh(const char* objFile, Microsoft::WRL::ComPtr<ID3D11Device> device)
 	CreateBuffers(&vertices[0], (int)vertices.size(), &indices[0], (int)indices.size(), device);
 }
 
+Mesh::Mesh() { }
 
-Mesh::~Mesh(void)
-{
 
-}
+Mesh::~Mesh(void) { }
 
 
 void Mesh::CreateBuffers(Vertex* vertArray, int numVerts, unsigned int* indexArray, int numIndices, Microsoft::WRL::ComPtr<ID3D11Device> device)

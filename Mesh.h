@@ -10,6 +10,7 @@ class Mesh
 public:
 	Mesh(Vertex* vertArray, int numVerts, unsigned int* indexArray, int numIndices, Microsoft::WRL::ComPtr<ID3D11Device> device);
 	Mesh(const char* objFile, Microsoft::WRL::ComPtr<ID3D11Device> device);
+	Mesh();
 	~Mesh(void);
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> GetVertexBuffer() { return vb; }
@@ -18,7 +19,7 @@ public:
 
 	void SetBuffersAndDraw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
-private:
+protected:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vb;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> ib;
 	int numIndices;
