@@ -17,4 +17,5 @@ private:
 	Camera* camera;
 	GameEntity* entity;
 	Transform* pivot;
+	Transform* cameraPos;
 };

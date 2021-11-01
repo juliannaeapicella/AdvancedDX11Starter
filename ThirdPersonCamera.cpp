@@ -18,13 +18,18 @@ ThirdPersonCamera::ThirdPersonCamera(GameEntity* entity, float aspectRatio)
 		1.0f,		// Mouse look
 		aspectRatio); // Aspect ratio
 
-	pivot->AddChild(camera->GetTransform());
+	cameraPos = new Transform();
+	XMFLOAT3 pos = camera->GetTransform()->GetPosition();
+	cameraPos->SetPosition(pos.x, pos.y, pos.z);
+
+	pivot->AddChild(cameraPos);
 }
 
 ThirdPersonCamera::~ThirdPersonCamera()
 {
 	delete camera;
 	delete pivot;
+	delete cameraPos;
 }
 
 Camera* ThirdPersonCamera::GetCamera()
@@ -35,8 +40,6 @@ Camera* ThirdPersonCamera::GetCamera()
 void ThirdPersonCamera::Update(float dt)
 {
 	Transform* cameraTransform = camera->GetTransform();
-	
-	pivot->RemoveChild(cameraTransform);
 
 	// Current speed
 	float speed = dt * 3.0f;
@@ -50,14 +53,10 @@ void ThirdPersonCamera::Update(float dt)
 	if (input.KeyDown(VK_UP)) { pivot->Rotate(0.001f, 0, 0); }
 	if (input.KeyDown(VK_DOWN)) { pivot->Rotate(-0.001f, 0, 0); }
 
-	pivot->AddChild(cameraTransform);
-
 	XMFLOAT3 entityPos = entity->GetTransform()->GetPosition();
-	XMFLOAT3 prevPos = pivot->GetPosition();
 	pivot->SetPosition(entityPos.x, entityPos.y, entityPos.z);
-	XMFLOAT3 pos = pivot->GetPosition();
 
-	cameraTransform->MoveRelative(pos.x - prevPos.x, pos.y - prevPos.y, pos.z - prevPos.z);
+	camera->GetTransform()->SetTransformsFromMatrix(cameraPos->GetWorldMatrix());
 
 	camera->UpdateViewMatrix();
 }
