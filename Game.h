@@ -80,6 +80,24 @@ private:
 	// Skybox
 	Sky* sky;
 
+	// Terrain resources
+	//GameEntity* terrainEntity;
+	//Mesh* terrainMesh;
+	//SimplePixelShader* terrainPS;
+
+	// Blend (or "splat") map
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainBlendMapSRV;
+
+	// Textures
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainTexture0SRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainTexture1SRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainTexture2SRV;
+
+	// Normal maps
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainNormals0SRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainNormals1SRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainNormals2SRV;
+
 	float interval;
 
 	// General helpers for setup and drawing
