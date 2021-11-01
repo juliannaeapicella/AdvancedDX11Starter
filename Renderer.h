@@ -42,6 +42,7 @@ public:
 		SimplePixelShader* PBRShader,
 		SimpleVertexShader* fullscreenVS,
 		SimplePixelShader* solidColorPS,
+		SimplePixelShader* simpleTexturePS,
 		SimplePixelShader* refractionPS);
 	~Renderer();
 
@@ -75,6 +76,7 @@ private:
 
 	SimpleVertexShader* fullscreenVS; // add these to constructor
 	SimplePixelShader* solidColorPS;
+	SimplePixelShader* simpleTexturePS;
 	SimplePixelShader* refractionPS;
 
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> refractionSilhouetteDepthState;

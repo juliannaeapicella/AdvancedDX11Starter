@@ -26,6 +26,7 @@ Renderer::Renderer(
 	SimplePixelShader* PBRShader,
 	SimpleVertexShader* fullscreenVS,
 	SimplePixelShader* solidColorPS,
+	SimplePixelShader* simpleTexturePS,
 	SimplePixelShader* refractionPS) :
 		device(device),
 		context(context),
@@ -46,6 +47,7 @@ Renderer::Renderer(
 		indexOfRefraction(0.5f),
 		fullscreenVS(fullscreenVS),
 		solidColorPS(solidColorPS),
+		simpleTexturePS(simpleTexturePS),
 		refractionPS(refractionPS) {
 
 	// initialize structs
@@ -229,6 +231,12 @@ void Renderer::Render(Camera* camera)
 	sky->Draw(camera);
 
 	fullscreenVS->SetShader();
+
+	renderTargets[0] = backBufferRTV.Get();
+	context->OMSetRenderTargets(1, renderTargets, 0);
+	simpleTexturePS->SetShader();
+	simpleTexturePS->SetShaderResourceView("Pixels", sceneCompositeSRV);
+	context->Draw(3, 0);
 
 	// Loop and render the refractive objects to the silhouette texture (if use silhouettes)
 	if (useRefractionSilhouette)
