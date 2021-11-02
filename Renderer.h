@@ -36,6 +36,7 @@ public:
 		Sky* sky,
 		const std::vector<GameEntity*>& entities,
 		const std::vector<Light>& lights,
+		int& lightCount,
 		Mesh* lightMesh,
 		SimpleVertexShader* lightVS,
 		SimplePixelShader* lightPS,
@@ -53,6 +54,7 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetColorsRenderTargetSRV();
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetNormalsRenderTargetSRV();
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetDepthsRenderTargetSRV();
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetSilhouetteRenderTargetSRV();
 
 private:
 	Microsoft::WRL::ComPtr<ID3D11Device> device;
@@ -65,16 +67,14 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> sceneColorsRTV;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> sceneNormalsRTV;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> sceneDepthsRTV;
-	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> sceneCompositeRTV;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> silhouetteRTV;
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sceneColorsSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sceneNormalsSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sceneDepthsSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sceneCompositeSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> silhouetteSRV;
 
-	SimpleVertexShader* fullscreenVS; // add these to constructor
+	SimpleVertexShader* fullscreenVS; 
 	SimplePixelShader* solidColorPS;
 	SimplePixelShader* simpleTexturePS;
 	SimplePixelShader* refractionPS;
@@ -91,6 +91,7 @@ private:
 	Sky* sky;
 	const std::vector<GameEntity*>& entities;
 	const std::vector<Light>& lights;
+	int& lightCount;
 
 	// for drawing point lights
 	Mesh* lightMesh;

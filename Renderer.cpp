@@ -20,6 +20,7 @@ Renderer::Renderer(
 	Sky* sky, 
 	const std::vector<GameEntity*>& entities, 
 	const std::vector<Light>& lights,
+	int& lightCount,
 	Mesh* lightMesh,
 	SimpleVertexShader* lightVS,
 	SimplePixelShader* lightPS,
@@ -38,11 +39,12 @@ Renderer::Renderer(
 		sky(sky),
 		entities(entities),
 		lights(lights),
+		lightCount(lightCount),
 		lightMesh(lightMesh), 
 		lightVS(lightVS),
 		lightPS(lightPS),
 		refractionScale(0.1f),
-		useRefractionSilhouette(false),
+		useRefractionSilhouette(true),
 		refractionFromNormalMap(true),
 		indexOfRefraction(0.5f),
 		fullscreenVS(fullscreenVS),
@@ -71,7 +73,6 @@ Renderer::Renderer(
 	CreateRenderTarget(windowWidth, windowHeight, sceneColorsRTV, sceneColorsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneNormalsRTV, sceneNormalsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneDepthsRTV, sceneDepthsSRV);
-	CreateRenderTarget(windowWidth, windowHeight, sceneCompositeRTV, sceneCompositeSRV);
 	CreateRenderTarget(windowWidth, windowHeight, silhouetteRTV, silhouetteSRV);
 
 	D3D11_DEPTH_STENCIL_DESC depthDesc = {};
@@ -111,7 +112,6 @@ void Renderer::PostResize(
 	CreateRenderTarget(windowWidth, windowHeight, sceneColorsRTV, sceneColorsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneNormalsRTV, sceneNormalsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneDepthsRTV, sceneDepthsSRV);
-	CreateRenderTarget(windowWidth, windowHeight, sceneCompositeRTV, sceneCompositeSRV);
 	CreateRenderTarget(windowWidth, windowHeight, silhouetteRTV, silhouetteSRV);
 }
 
@@ -139,8 +139,6 @@ void Renderer::Render(Camera* camera)
 	renderTargets[2] = sceneDepthsRTV.Get();
 
 	context->OMSetRenderTargets(3, renderTargets, depthBufferDSV.Get());
-
-	int lightCount = lights.size();
 
 	// collect per frame data
 	{
@@ -235,7 +233,7 @@ void Renderer::Render(Camera* camera)
 	renderTargets[0] = backBufferRTV.Get();
 	context->OMSetRenderTargets(1, renderTargets, 0);
 	simpleTexturePS->SetShader();
-	simpleTexturePS->SetShaderResourceView("Pixels", sceneCompositeSRV);
+	simpleTexturePS->SetShaderResourceView("Pixels", sceneColorsSRV);
 	context->Draw(3, 0);
 
 	// Loop and render the refractive objects to the silhouette texture (if use silhouettes)
@@ -302,7 +300,7 @@ void Renderer::Render(Camera* camera)
 		refractionPS->CopyBufferData("perObject");
 
 		// Set textures
-		refractionPS->SetShaderResourceView("ScreenPixels", sceneCompositeSRV);
+		refractionPS->SetShaderResourceView("ScreenPixels", sceneColorsSRV);
 		refractionPS->SetShaderResourceView("RefractionSilhouette", silhouetteSRV);
 		refractionPS->SetShaderResourceView("EnvironmentMap", sky->GetSkySRV());
 
@@ -349,6 +347,11 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Renderer::GetDepthsRenderTarget
 	return sceneDepthsSRV;
 }
 
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Renderer::GetSilhouetteRenderTargetSRV()
+{
+	return silhouetteSRV;
+}
+
 void Renderer::DrawPointLights(Camera* camera)
 {
 	// Turn on these shaders
@@ -359,7 +362,7 @@ void Renderer::DrawPointLights(Camera* camera)
 	lightVS->SetMatrix4x4("view", camera->GetView());
 	lightVS->SetMatrix4x4("projection", camera->GetProjection());
 
-	for (int i = 0; i < lights.size(); i++)
+	for (int i = 0; i < lightCount; i++)
 	{
 		Light light = lights[i];
 

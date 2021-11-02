@@ -108,7 +108,7 @@ void Game::Init()
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Set up lights initially
-	lightCount = 64;
+	lightCount = 3;
 	GenerateLights();
 
 	// Make our camera
@@ -160,8 +160,11 @@ void Game::LoadAssetsAndCreateEntities()
 	shaders.push_back(pixelShader);
 	shaders.push_back(pixelShaderPBR);
 	shaders.push_back(solidColorPS);
+	shaders.push_back(simpleTexturePS);
+	shaders.push_back(refractionPS);
 	shaders.push_back(skyVS);
 	shaders.push_back(skyPS);
+	shaders.push_back(fullscreenVS);
 
 	// Set up the sprite batch and load the sprite font
 	spriteBatch = new SpriteBatch(context.Get());
@@ -177,7 +180,6 @@ void Game::LoadAssetsAndCreateEntities()
 	meshes.push_back(helixMesh);
 	meshes.push_back(cubeMesh);
 	meshes.push_back(coneMesh);
-
 	
 	// Declare the textures we'll need
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobbleA,  cobbleN,  cobbleR,  cobbleM;
@@ -245,6 +247,7 @@ void Game::LoadAssetsAndCreateEntities()
 	textures.push_back(bronzeA); textures.push_back(bronzeN); textures.push_back(bronzeR); textures.push_back(bronzeM);
 	textures.push_back(roughA); textures.push_back(roughN); textures.push_back(roughR); textures.push_back(roughM);
 	textures.push_back(woodA); textures.push_back(woodN); textures.push_back(woodR); textures.push_back(woodM);
+	textures.push_back(solidA); textures.push_back(solidN); textures.push_back(solidM); textures.push_back(solidNonM); textures.push_back(solidR1); textures.push_back(solidR2); textures.push_back(solidR3);
 
 	// Describe and create our sampler state
 	D3D11_SAMPLER_DESC sampDesc = {};
@@ -295,7 +298,6 @@ void Game::LoadAssetsAndCreateEntities()
 		device,
 		context);
 
-	delete fullscreenVS;
 	delete irradianceMapPS;
 	delete specularConvolutionPS;
 	delete lookUpTablePS;
@@ -322,7 +324,7 @@ void Game::LoadAssetsAndCreateEntities()
 	Material* floorMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), floorA, floorN, floorR, floorM, samplerOptions, clampSampler);
 	Material* paintMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), paintA, paintN, paintR, paintM, samplerOptions, clampSampler);
 	Material* scratchedMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), scratchedA, scratchedN, scratchedR, scratchedM, samplerOptions, clampSampler);
-	Material* bronzeMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), bronzeA, bronzeN, bronzeR, bronzeM, samplerOptions, clampSampler);
+	Material* bronzeMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, true, XMFLOAT2(2, 2), bronzeA, bronzeN, bronzeR, bronzeM, samplerOptions, clampSampler);
 	Material* roughMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), roughA, roughN, roughR, roughM, samplerOptions, clampSampler);
 	Material* woodMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f , false, XMFLOAT2(2, 2), woodA, woodN, woodR, woodM, samplerOptions, clampSampler);
 
@@ -352,7 +354,7 @@ void Game::LoadAssetsAndCreateEntities()
 	solidMetalSphereR1->GetTransform()->SetScale(2, 2, 2);
 	solidMetalSphereR1->GetTransform()->SetPosition(-2, 1, 0);
 
-	GameEntity* solidMetalSphereR2 = new GameEntity(sphereMesh, solidMetalMaterialR2);
+	GameEntity* solidMetalSphereR2 = new GameEntity(sphereMesh, bronzeMatPBR);
 	solidMetalSphereR2->GetTransform()->SetScale(2, 2, 2);
 	solidMetalSphereR2->GetTransform()->SetPosition(0, 1, 0);
 	
@@ -472,6 +474,7 @@ void Game::LoadAssetsAndCreateEntities()
 		sky,
 		entities,
 		lights,
+		lightCount,
 		lightMesh,
 		lightVS,
 		lightPS,
@@ -672,7 +675,13 @@ void Game::UpdateSceneWindow()
 			"Scratched - PBR",
 			"Bronze - PBR",
 			"Rough - PBR",
-			"Wood - PBR"
+			"Wood - PBR",
+			"White, Non-Metal, Rough",
+			"White, Non-Metal, Less Rough",
+			"White, Non-Metal, Smooth",
+			"White, Metal, Rough",
+			"White, Metal, Less Rough",
+			"White, Metal, Smooth",
 		};
 
 		// specific entity headers
@@ -684,7 +693,7 @@ void Game::UpdateSceneWindow()
 
 	if (ImGui::CollapsingHeader("Lights")) {
 		// number of lights slider
-		ImGui::SliderInt("Number of Lights", &lightCount, 0, 64);
+		ImGui::SliderInt("Number of Lights", &lightCount, 0, lights.size());
 
 		// specific light headers
 		for (int i = 0; i < lightCount; i++)
@@ -707,6 +716,7 @@ void Game::UpdateSceneWindow()
 			"Bronze A", "Bronze N", "Bronze R", "Bronze M",
 			"Rough A", "Rough N", "Rough R", "Rough M",
 			"Wood A", "Wood N", "Wood R", "Wood M",
+			"Solid White A", "Solid White N", "Solid Non-Metal", "Solid Metal", "Rough", "Less Rough", "Smooth",
 		};
 
 		// select specific material headers
@@ -838,6 +848,10 @@ void Game::GenerateMaterialsHeader(int i, const char* textureTitles[])
 		ImGui::ColorEdit3(ConcatStringAndInt("Color##Ma", i).c_str(), &color.x);
 		materials[i]->SetColor(color);
 
+		bool isRefractive = materials[i]->IsRefractive();
+		ImGui::Checkbox(ConcatStringAndInt("Refractive##", i).c_str(), &isRefractive);
+		materials[i]->SetRefractive(isRefractive);
+
 		// display and edit textures
 		ImGui::Text("Textures: ");
 		ImVec2 size = ImVec2(100, 100);
@@ -911,6 +925,10 @@ void Game::GenerateMRTHeader()
 		ImGui::Text("Depths: ");
 		ImTextureID depths = renderer->GetDepthsRenderTargetSRV().Get();
 		ImGui::Image(depths, size, uv_min, uv_max, tint_col, border_col);
+
+		ImGui::Text("Silhouette: ");
+		ImTextureID silhouette = renderer->GetSilhouetteRenderTargetSRV().Get();
+		ImGui::Image(silhouette, size, uv_min, uv_max, tint_col, border_col);
 	}
 }
 
