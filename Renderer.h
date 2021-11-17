@@ -4,6 +4,7 @@
 #include "GameEntity.h"
 #include "Camera.h"
 #include "Lights.h"
+#include "Emitter.h"
 #include "Sky.h"
 
 #include <wrl/client.h>
@@ -36,6 +37,7 @@ public:
 		Sky* sky,
 		const std::vector<GameEntity*>& entities,
 		const std::vector<Light>& lights,
+		const std::vector<Emitter*>& emitters,
 		int& lightCount,
 		Mesh* lightMesh,
 		SimpleVertexShader* lightVS,
@@ -49,7 +51,7 @@ public:
 
 	void PreResize();
 	void PostResize(unsigned int windowWidth, unsigned int windowHeight, Microsoft::WRL::ComPtr<ID3D11RenderTargetView> backBufferRTV, Microsoft::WRL::ComPtr<ID3D11DepthStencilView> depthBufferDSV);
-	void Render(Camera* camera);
+	void Render(Camera* camera, float totalTime);
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetColorsRenderTargetSRV();
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetNormalsRenderTargetSRV();
@@ -85,12 +87,17 @@ private:
 	float indexOfRefraction;
 	float refractionScale;
 
+	// particle resources
+	Microsoft::WRL::ComPtr<ID3D11BlendState> particleBlendAdditive;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> particleDepthState;
+
 	unsigned int windowWidth;
 	unsigned int windowHeight;
 
 	Sky* sky;
 	const std::vector<GameEntity*>& entities;
 	const std::vector<Light>& lights;
+	const std::vector<Emitter*>& emitters;
 	int& lightCount;
 
 	// for drawing point lights

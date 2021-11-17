@@ -20,6 +20,7 @@ Renderer::Renderer(
 	Sky* sky, 
 	const std::vector<GameEntity*>& entities, 
 	const std::vector<Light>& lights,
+	const std::vector<Emitter*>& emitters,
 	int& lightCount,
 	Mesh* lightMesh,
 	SimpleVertexShader* lightVS,
@@ -39,6 +40,7 @@ Renderer::Renderer(
 		sky(sky),
 		entities(entities),
 		lights(lights),
+		emitters(emitters),
 		lightCount(lightCount),
 		lightMesh(lightMesh), 
 		lightVS(lightVS),
@@ -80,9 +82,30 @@ Renderer::Renderer(
 	depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
 	device->CreateDepthStencilState(&depthDesc, refractionSilhouetteDepthState.GetAddressOf());
+
+	// render states for particles
+	D3D11_DEPTH_STENCIL_DESC particleDepthDesc = {};
+	particleDepthDesc.DepthEnable = true; 
+	particleDepthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	particleDepthDesc.DepthFunc = D3D11_COMPARISON_LESS; 
+	device->CreateDepthStencilState(&particleDepthDesc, particleDepthState.GetAddressOf());
+
+	D3D11_BLEND_DESC additiveBlendDesc = {};
+	additiveBlendDesc.RenderTarget[0].BlendEnable = true;
+	additiveBlendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD; 
+	additiveBlendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD; 
+	additiveBlendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;   
+	additiveBlendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;  
+	additiveBlendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;   
+	additiveBlendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;  
+	additiveBlendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	device->CreateBlendState(&additiveBlendDesc, particleBlendAdditive.GetAddressOf());
+
 }
 
-Renderer::~Renderer() {}
+Renderer::~Renderer() {
+	
+}
 
 void Renderer::PreResize()
 {
@@ -115,7 +138,7 @@ void Renderer::PostResize(
 	CreateRenderTarget(windowWidth, windowHeight, silhouetteRTV, silhouetteSRV);
 }
 
-void Renderer::Render(Camera* camera)
+void Renderer::Render(Camera* camera, float totalTime)
 {
 	// Background color for clearing
 	const float color[4] = { 0, 0, 0, 1 };
@@ -314,6 +337,24 @@ void Renderer::Render(Camera* camera)
 		// Reset this material's PS
 		material->SetPS(prevPS);
 	}
+
+	// draw particles
+	renderTargets[0] = backBufferRTV.Get();
+	context->OMSetRenderTargets(1, renderTargets, depthBufferDSV.Get());
+
+	// Set up render states
+	context->OMSetBlendState(particleBlendAdditive.Get(), 0, 0xFFFFFFFF);
+	context->OMSetDepthStencilState(particleDepthState.Get(), 0);
+
+	// Loop and draw each emitter
+	for (auto& e : emitters)
+	{
+		e->Draw(camera, totalTime);
+	}
+
+	// Reset render states
+	context->OMSetBlendState(0, 0, 0xFFFFFFFF);
+	context->OMSetDepthStencilState(0, 0);
 
 	// Draw ImGui
 	ImGui::Render();

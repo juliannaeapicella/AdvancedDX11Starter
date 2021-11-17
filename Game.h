@@ -11,6 +11,7 @@
 #include "Lights.h"
 #include "Sky.h"
 #include "Input.h"
+#include "Emitter.h"
 
 #include <DirectXMath.h>
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
@@ -46,6 +47,7 @@ private:
 	std::vector<GameEntity*> entitiesRandom;
 	std::vector<GameEntity*> entitiesLineup;
 	std::vector<GameEntity*> entitiesGradient;
+	std::vector<Emitter*> emitters;
 	SimplePixelShader* pixelShader;
 	SimplePixelShader* pixelShaderPBR;
 	std::vector<ISimpleShader*> shaders;

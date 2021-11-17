@@ -73,6 +73,7 @@ Game::~Game()
 	for (auto& s : shaders) delete s; 
 	for (auto& m : materials) delete m;
 	for (auto& e : entities) delete e;
+	for (auto& e : emitters) delete e;
 
 	// Delete any one-off objects
 	delete sky;
@@ -156,6 +157,9 @@ void Game::LoadAssetsAndCreateEntities()
 	SimplePixelShader* specularConvolutionPS = LoadShader(SimplePixelShader, L"IBLSpecularConvolutionPS.cso");
 	SimplePixelShader* lookUpTablePS = LoadShader(SimplePixelShader, L"IBLBrdfLookUpTablePS.cso");
 
+	SimpleVertexShader* particleVS = LoadShader(SimpleVertexShader, L"ParticleVS.cso");
+	SimplePixelShader* particlePS = LoadShader(SimplePixelShader, L"ParticlePS.cso");
+
 	shaders.push_back(vertexShader);
 	shaders.push_back(pixelShader);
 	shaders.push_back(pixelShaderPBR);
@@ -165,6 +169,8 @@ void Game::LoadAssetsAndCreateEntities()
 	shaders.push_back(skyVS);
 	shaders.push_back(skyPS);
 	shaders.push_back(fullscreenVS);
+	shaders.push_back(particleVS);
+	shaders.push_back(particlePS);
 
 	// Set up the sprite batch and load the sprite font
 	spriteBatch = new SpriteBatch(context.Get());
@@ -455,6 +461,24 @@ void Game::LoadAssetsAndCreateEntities()
 	entities.push_back(roughSphere);
 	entities.push_back(woodSphere);*/
 
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture;
+
+	// Load the textures using our succinct LoadTexture() macro
+	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/circle_01.png", particleTexture);
+
+	// Set up particle emitters
+	Emitter* emitter = new Emitter(
+		100,
+		2,
+		10.5f,
+		device,
+		context,
+		particleVS,
+		particlePS,
+		particleTexture);
+
+	emitters.push_back(emitter);
+
 	// Save assets needed for drawing point lights
 	// (Since these are just copies of the pointers,
 	//  we won't need to directly delete them as 
@@ -474,6 +498,7 @@ void Game::LoadAssetsAndCreateEntities()
 		sky,
 		entities,
 		lights,
+		emitters,
 		lightCount,
 		lightMesh,
 		lightVS,
@@ -580,6 +605,10 @@ void Game::Update(float deltaTime, float totalTime)
 	// Update the camera
 	camera->Update(deltaTime);
 
+	// update emitters
+	for (auto& e : emitters)
+		e->Update(deltaTime, totalTime);
+
 	// Check individual input
 	if (input.KeyDown(VK_ESCAPE)) Quit();
 	if (input.KeyPress(VK_TAB)) GenerateLights();
@@ -591,7 +620,7 @@ void Game::Update(float deltaTime, float totalTime)
 // --------------------------------------------------------
 void Game::Draw(float deltaTime, float totalTime)
 {
-	renderer->Render(camera);
+	renderer->Render(camera, totalTime);
 }
 
 void Game::UpdateGUI(float dt, Input& input)
