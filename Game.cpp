@@ -360,7 +360,7 @@ void Game::LoadAssetsAndCreateEntities()
 	solidMetalSphereR1->GetTransform()->SetScale(2, 2, 2);
 	solidMetalSphereR1->GetTransform()->SetPosition(-2, 1, 0);
 
-	GameEntity* solidMetalSphereR2 = new GameEntity(sphereMesh, bronzeMatPBR);
+	/*GameEntity* solidMetalSphereR2 = new GameEntity(sphereMesh, bronzeMatPBR);
 	solidMetalSphereR2->GetTransform()->SetScale(2, 2, 2);
 	solidMetalSphereR2->GetTransform()->SetPosition(0, 1, 0);
 	
@@ -378,14 +378,14 @@ void Game::LoadAssetsAndCreateEntities()
 
 	GameEntity* solidSphereR3 = new GameEntity(sphereMesh, solidMaterialR3);
 	solidSphereR3->GetTransform()->SetScale(2, 2, 2);
-	solidSphereR3->GetTransform()->SetPosition(2, -1, 0);
+	solidSphereR3->GetTransform()->SetPosition(2, -1, 0);*/
 
 	entities.push_back(solidMetalSphereR1);
-	entities.push_back(solidMetalSphereR2);
+	/*entities.push_back(solidMetalSphereR2);
 	entities.push_back(solidMetalSphereR3);
 	entities.push_back(solidSphereR1);
 	entities.push_back(solidSphereR2);
-	entities.push_back(solidSphereR3);
+	entities.push_back(solidSphereR3);*/
 
 	// === Create the PBR entities =====================================
 	/*GameEntity* cobSpherePBR = new GameEntity(sphereMesh, cobbleMat2xPBR);
@@ -469,8 +469,9 @@ void Game::LoadAssetsAndCreateEntities()
 	// Set up particle emitters
 	Emitter* emitter = new Emitter(
 		100,
-		2,
-		10.5f,
+		20,
+		1.0f,
+		EM_SPHERE,
 		device,
 		context,
 		particleVS,
@@ -756,6 +757,16 @@ void Game::UpdateSceneWindow()
 	}
 
 	GenerateSkyHeader();
+
+	if (ImGui::CollapsingHeader("Emitters")) {
+		ImGui::Text(ConcatStringAndInt("Number of Emitters: ", emitters.size()).c_str());
+
+		for (int i = 0; i < emitters.size(); i++)
+		{
+			GenerateEmitterHeader(i);
+		}
+	}
+
 	GenerateMRTHeader();
 
 	ImGui::End();
@@ -930,6 +941,54 @@ void Game::GenerateSkyHeader()
 
 		ImGui::Text("BRDF Look Up Map: ");
 		ImTextureID texture = sky->GetBRDFLookUpTexture().Get();
+		ImGui::Image(texture, size, uv_min, uv_max, tint_col, border_col);
+	}
+}
+
+void Game::GenerateEmitterHeader(int i)
+{
+	if (ImGui::CollapsingHeader(ConcatStringAndInt("Emitter ", i + 1).c_str())) {
+		ImGui::Text(ConcatStringAndInt("Maximum Particles: ", emitters[i]->GetMaxParticles()).c_str());
+		ImGui::Text(ConcatStringAndInt("Living Particles: ", emitters[i]->GetLivingParticleCount()).c_str());
+
+		int particlesPerSec = emitters[i]->GetParticlesPerSec();
+		ImGui::SliderInt(ConcatStringAndInt("Particles Per Second##Em", i).c_str(), &particlesPerSec, 1, 20);
+		emitters[i]->SetParticlesPerSec(particlesPerSec);
+
+		float lifetime = emitters[i]->GetLifetime();
+		ImGui::SliderFloat(ConcatStringAndInt("Lifetime##Em", i).c_str(), &lifetime, 1.0f, 20.0f);
+		emitters[i]->SetLifetime(lifetime);
+
+		const char* shapes[] = { "Point", "Cube", "Sphere" };
+
+		int shape = emitters[i]->GetShape();
+		ImGui::Combo(ConcatStringAndInt("Shape##Em", i).c_str(), &shape, shapes, 3);
+		emitters[i]->SetShape(static_cast<Shape>(shape));
+
+		// transform controls
+		ImGui::Text("Transform:");
+
+		XMFLOAT3 pos = emitters[i]->GetTransform()->GetPosition();
+		ImGui::InputFloat3(ConcatStringAndInt("Position##Em", i).c_str(), &pos.x);
+		emitters[i]->GetTransform()->SetPosition(pos.x, pos.y, pos.z);
+
+		XMFLOAT3 rot = emitters[i]->GetTransform()->GetPitchYawRoll();
+		ImGui::SliderFloat3(ConcatStringAndInt("Rotation##Em", i).c_str(), &rot.x, 0.0f, 6.28319f);
+		emitters[i]->GetTransform()->SetRotation(rot.x, rot.y, rot.z);
+
+		XMFLOAT3 scale = emitters[i]->GetTransform()->GetScale();
+		ImGui::InputFloat3(ConcatStringAndInt("Scale##Em", i).c_str(), &scale.x);
+		emitters[i]->GetTransform()->SetScale(scale.x, scale.y, scale.z);
+
+		// display and edit textures
+		ImGui::Text("Texture: ");
+		ImVec2 size = ImVec2(100, 100);
+		ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
+		ImVec2 uv_max = ImVec2(1.0f, 1.0f);                 // Lower-right
+		ImVec4 tint_col = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);   // No tint
+		ImVec4 border_col = ImVec4(1.0f, 1.0f, 1.0f, 0.5f); // 50% opaque white
+
+		ImTextureID texture = emitters[i]->GetTexture().Get();
 		ImGui::Image(texture, size, uv_min, uv_max, tint_col, border_col);
 	}
 }

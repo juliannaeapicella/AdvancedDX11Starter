@@ -1,4 +1,6 @@
 #include "Emitter.h"
+#include <chrono>
+#include <random>
 
 using namespace DirectX;
 
@@ -6,6 +8,7 @@ Emitter::Emitter(
 	int maxParticles,
 	int particlesPerSec,
 	float lifetime,
+	Shape shape,
 	Microsoft::WRL::ComPtr<ID3D11Device> device,
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
 	SimpleVertexShader* vs,
@@ -14,6 +17,7 @@ Emitter::Emitter(
 	maxParticles(maxParticles),
 	particlesPerSec(particlesPerSec),
 	lifetime(lifetime),
+	shape(shape),
 	context(context),
 	vs(vs),
 	ps(ps),
@@ -70,11 +74,15 @@ Emitter::Emitter(
 	srvDesc.Buffer.FirstElement = 0;
 	srvDesc.Buffer.NumElements = maxParticles;
 	device->CreateShaderResourceView(particleDataBuffer.Get(), &srvDesc, particleDataSRV.GetAddressOf());
+
+	// make transform
+	transform = new Transform();
 }
 
 Emitter::~Emitter()
 {
 	delete[] particles;
+	delete transform;
 }
 
 void Emitter::Update(float dt, float currentTime)
@@ -162,7 +170,6 @@ void Emitter::Draw(Camera* camera, float currentTime)
 
 	// draw particles
 	context->DrawIndexed(livingParticleCount * 6, 0, 0);
-
 }
 
 void Emitter::UpdateSingleParticle(float currentTime, int index)
@@ -186,14 +193,112 @@ void Emitter::EmitParticle(float currentTime)
 	int spawnedIndex = indexFirstDead;
 
 	particles[spawnedIndex].EmitTime = currentTime;
-	particles[spawnedIndex].StartingPosition = XMFLOAT3(0, 0, 0);
 
-	// Here is where you could make particle spawning more interesting
-	// by adjusting the starting position and other starting values
-	// using random numbers.
+	if (shape == EM_POINT) {
+		particles[spawnedIndex].StartingPosition = transform->GetPosition();
+	}
+	else if (shape == EM_CUBE) {
+		particles[spawnedIndex].StartingPosition = GeneratePointInCube(transform->GetPosition(), transform->GetScale());
+	}
+	else if (shape == EM_SPHERE) {
+		particles[spawnedIndex].StartingPosition = GeneratePointInSphere(transform->GetPosition(), transform->GetScale());
+	}
+
+	//particles[spawnedIndex].Size = 0.2f;
 
 	indexFirstDead++;
 	indexFirstDead %= maxParticles; 
 
 	livingParticleCount++;
+}
+
+DirectX::XMFLOAT3 Emitter::GeneratePointInSphere(DirectX::XMFLOAT3 position, DirectX::XMFLOAT3 scale)
+{
+	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+	std::default_random_engine generator(seed);
+
+	std::normal_distribution<float> d(0.0f, 1.0f);
+
+	float u = ((double)rand() / (RAND_MAX));
+	float x1 = d(generator);
+	float x2 = d(generator);
+	float x3 = d(generator);
+
+	float mag = sqrt((x1*x1) + (x2*x2) + (x3*x3));
+	x1 /= mag;
+	x2 /= mag;
+	x3 /= mag;
+
+	float c = cbrt(u);
+
+	XMFLOAT3 point = XMFLOAT3(x1*c, x2*c, x3*c);
+
+	// transform the point to match emitter
+	return XMFLOAT3(
+		(point.x * (scale.x / 2)) + position.x,
+		(point.y * (scale.y / 2)) + position.y,
+		(point.z * (scale.z / 2)) + position.z);
+}
+
+DirectX::XMFLOAT3 Emitter::GeneratePointInCube(DirectX::XMFLOAT3 position, DirectX::XMFLOAT3 scale)
+{
+	float x = ((double)rand() / (RAND_MAX));
+	float y = ((double)rand() / (RAND_MAX));
+	float z = ((double)rand() / (RAND_MAX));
+
+	return DirectX::XMFLOAT3(
+		(x * scale.x) + (position.x - (scale.x / 2)),
+		(y * scale.y) + (position.y - (scale.y / 2)),
+		(z * scale.z) + (position.z - (scale.z / 2)));
+}
+
+int Emitter::GetMaxParticles()
+{
+	return maxParticles;
+}
+
+int Emitter::GetLivingParticleCount()
+{
+	return livingParticleCount;
+}
+
+int Emitter::GetParticlesPerSec()
+{
+	return particlesPerSec;
+}
+
+void Emitter::SetParticlesPerSec(int particles)
+{
+	particlesPerSec = particles;
+	secondsPerParticle = 1.0f / particlesPerSec;
+}
+
+Shape Emitter::GetShape()
+{
+	return shape;
+}
+
+void Emitter::SetShape(Shape shape)
+{
+	this->shape = shape;
+}
+
+float Emitter::GetLifetime()
+{
+	return lifetime;
+}
+
+void Emitter::SetLifetime(float lifetime)
+{
+	this->lifetime = lifetime;
+}
+
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Emitter::GetTexture()
+{
+	return texture;
+}
+
+void Emitter::SetTexture(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> texture)
+{
+	this->texture = texture;
 }

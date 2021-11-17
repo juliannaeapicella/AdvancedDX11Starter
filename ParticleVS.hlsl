@@ -32,18 +32,20 @@ VertexToPixel main(uint id : SV_VertexID)
 
 	float age = currentTime - p.EmitTime;
 
+	//float size = p.Size / 2;
+
 	// move right
-	pos += float3(0.1f, 0, 0) * age;
+	pos += float3(0, 0.1f, 0) * age;
 
 	// === Here is where you could do LOTS of other particle
 	// === simulation updates, like rotation, acceleration, forces,
 	// === fading, color interpolation, size changes, etc.
 
 	float2 offsets[4];
-	offsets[0] = float2(-1.0f, +1.0f);  // TL
-	offsets[1] = float2(+1.0f, +1.0f);  // TR
-	offsets[2] = float2(+1.0f, -1.0f);  // BR
-	offsets[3] = float2(-1.0f, -1.0f);  // BL
+	offsets[0] = float2(-0.1f, +0.1f);  // TL
+	offsets[1] = float2(+0.1f, +0.1f);  // TR
+	offsets[2] = float2(+0.1f, -0.1f);  // BR
+	offsets[3] = float2(-0.1f, -0.1f);  // BL
 
 	// offset the position based on the camera's right and up vectors
 	pos += float3(view._11, view._12, view._13) * offsets[cornerID].x; // RIGHT

@@ -6,11 +6,15 @@
 
 #include "SimpleShader.h"
 #include "Camera.h"
+#include "Transform.h"
+
+enum Shape { EM_POINT, EM_CUBE, EM_SPHERE };
 
 struct Particle
 {
 	float EmitTime;
 	DirectX::XMFLOAT3 StartingPosition;
+	//float Size;
 };
 
 class Emitter
@@ -20,6 +24,7 @@ public:
 		int maxParticles,
 		int particlesPerSec,
 		float lifetime,
+		Shape shape,
 		Microsoft::WRL::ComPtr<ID3D11Device> device,
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
 		SimpleVertexShader* vs,
@@ -30,6 +35,18 @@ public:
 
 	void Update(float dt, float currentTime);
 	void Draw(Camera* camera, float currentTime);
+
+	int GetMaxParticles();
+	int GetLivingParticleCount();
+	int GetParticlesPerSec();
+	void SetParticlesPerSec(int particles);
+	Shape GetShape();
+	void SetShape(Shape shape);
+	float GetLifetime();
+	void SetLifetime(float lifetime);
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetTexture();
+	void SetTexture(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> texture);
+	Transform* GetTransform() { return transform; };
 
 private:
 	// particles
@@ -43,6 +60,7 @@ private:
 	int particlesPerSec;
 	float secondsPerParticle;
 	float timeSinceLastEmit;
+	Shape shape;
 
 	// system
 	float lifetime;
@@ -58,8 +76,13 @@ private:
 	SimpleVertexShader* vs;
 	SimplePixelShader* ps;
 
+	Transform* transform;
+
 	// helper methods
 	void UpdateSingleParticle(float currentTime, int index);
 	void EmitParticle(float currentTime);
+
+	DirectX::XMFLOAT3 GeneratePointInSphere(DirectX::XMFLOAT3 position, DirectX::XMFLOAT3 scale);
+	DirectX::XMFLOAT3 GeneratePointInCube(DirectX::XMFLOAT3 position, DirectX::XMFLOAT3 scale);
 };
 
