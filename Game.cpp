@@ -356,13 +356,13 @@ void Game::LoadAssetsAndCreateEntities()
 	materials.push_back(solidMaterialR2);
 	materials.push_back(solidMaterialR3);
 
-	GameEntity* solidMetalSphereR1 = new GameEntity(sphereMesh, solidMetalMaterialR1);
+	/*GameEntity* solidMetalSphereR1 = new GameEntity(sphereMesh, solidMetalMaterialR1);
 	solidMetalSphereR1->GetTransform()->SetScale(2, 2, 2);
 	solidMetalSphereR1->GetTransform()->SetPosition(-2, 1, 0);
 
-	/*GameEntity* solidMetalSphereR2 = new GameEntity(sphereMesh, bronzeMatPBR);
+	GameEntity* solidMetalSphereR2 = new GameEntity(sphereMesh, bronzeMatPBR);
 	solidMetalSphereR2->GetTransform()->SetScale(2, 2, 2);
-	solidMetalSphereR2->GetTransform()->SetPosition(0, 1, 0);
+	solidMetalSphereR2->GetTransform()->SetPosition(0, 0, 0);
 	
 	GameEntity* solidMetalSphereR3 = new GameEntity(sphereMesh, solidMetalMaterialR3);
 	solidMetalSphereR3->GetTransform()->SetScale(2, 2, 2);
@@ -374,18 +374,18 @@ void Game::LoadAssetsAndCreateEntities()
 
 	GameEntity* solidSphereR2 = new GameEntity(sphereMesh, solidMaterialR2);
 	solidSphereR2->GetTransform()->SetScale(2, 2, 2);
-	solidSphereR2->GetTransform()->SetPosition(0, -1, 0);
+	solidSphereR2->GetTransform()->SetPosition(0, -1, 0);*/
 
-	GameEntity* solidSphereR3 = new GameEntity(sphereMesh, solidMaterialR3);
+	GameEntity* solidSphereR3 = new GameEntity(sphereMesh, solidMaterialR2);
 	solidSphereR3->GetTransform()->SetScale(2, 2, 2);
-	solidSphereR3->GetTransform()->SetPosition(2, -1, 0);*/
+	solidSphereR3->GetTransform()->SetPosition(0, 0, 0);
 
-	entities.push_back(solidMetalSphereR1);
-	/*entities.push_back(solidMetalSphereR2);
+	/*entities.push_back(solidMetalSphereR1);
+	entities.push_back(solidMetalSphereR2);
 	entities.push_back(solidMetalSphereR3);
 	entities.push_back(solidSphereR1);
-	entities.push_back(solidSphereR2);
-	entities.push_back(solidSphereR3);*/
+	entities.push_back(solidSphereR2);*/
+	entities.push_back(solidSphereR3);
 
 	// === Create the PBR entities =====================================
 	/*GameEntity* cobSpherePBR = new GameEntity(sphereMesh, cobbleMat2xPBR);
@@ -461,24 +461,128 @@ void Game::LoadAssetsAndCreateEntities()
 	entities.push_back(roughSphere);
 	entities.push_back(woodSphere);*/
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture1;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture2;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture3;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture4;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture5;
 
 	// Load the textures using our succinct LoadTexture() macro
-	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/circle_01.png", particleTexture);
+	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/star_06.png", particleTexture1);
+	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/symbol_01.png", particleTexture2);
+	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/symbol_02.png", particleTexture3);
+	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/smoke_07.png", particleTexture4);
+	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/star_04.png", particleTexture5);
 
 	// Set up particle emitters
-	Emitter* emitter = new Emitter(
+	Emitter* emitter1 = new Emitter(
 		100,
-		20,
-		1.0f,
+		5,
+		2.0f,
 		EM_SPHERE,
 		device,
 		context,
 		particleVS,
 		particlePS,
-		particleTexture);
+		particleTexture1);
 
-	emitters.push_back(emitter);
+	emitter1->GetTransform()->SetScale(2.5f, 2.5f, 2.5f);
+	emitter1->SetVelocityMinMaxX(0.0f, 0.0f);
+	emitter1->SetVelocityMinMaxY(0.0f, 0.0f);
+	emitter1->SetVelocityMinMaxZ(0.0f, 0.0f);
+	emitter1->SetSizeModifier(-1);
+	emitter1->SetAlphaModifier(1);
+
+	emitters.push_back(emitter1);
+
+	Emitter* emitter2 = new Emitter(
+		100,
+		10,
+		7.0f,
+		EM_POINT,
+		device,
+		context,
+		particleVS,
+		particlePS,
+		particleTexture2);
+
+	emitter2->GetTransform()->SetPosition(3.0f, 1.0f, 0.0f);
+	emitter2->SetParticleSize(XMFLOAT2(0.3f, 0.3f));
+	emitter2->SetColorTint(XMFLOAT4(1.0f, 0.4f, 1.0f, 1.0f));
+	emitter2->SetVelocityMinMaxX(-1.5f, -1.0f);
+	emitter2->SetVelocityMinMaxY(1.0f, 1.5f);
+	emitter2->SetVelocityMinMaxZ(-0.1f, 0.1f);
+	emitter2->SetAcceleration(XMFLOAT3(0.0f, -0.3f, 0.0f));
+	emitter2->SetAlphaModifier(1);
+
+	emitters.push_back(emitter2);
+
+	Emitter* emitter3 = new Emitter(
+		100,
+		10,
+		7.0f,
+		EM_POINT,
+		device,
+		context,
+		particleVS,
+		particlePS,
+		particleTexture3);
+
+	emitter3->GetTransform()->SetPosition(-3.0f, 1.0f, 0.0f);
+	emitter3->SetParticleSize(XMFLOAT2(0.3f, 0.3f));
+	emitter3->SetColorTint(XMFLOAT4(1.0f, 1.0f, 0.2f, 1.0f));
+	emitter3->SetVelocityMinMaxX(1.0f, 1.5f);
+	emitter3->SetVelocityMinMaxY(1.0f, 1.5f);
+	emitter3->SetVelocityMinMaxZ(-0.1f, 0.1f);
+	emitter3->SetAcceleration(XMFLOAT3(0.0f, -0.3f, 0.0f));
+	emitter3->SetAlphaModifier(1);
+
+	emitters.push_back(emitter3);
+
+	Emitter* emitter4 = new Emitter(
+		100,
+		5,
+		20.0f,
+		EM_CUBE,
+		device,
+		context,
+		particleVS,
+		particlePS,
+		particleTexture4);
+
+	emitter4->GetTransform()->SetPosition(0.0f, -3.0f, 0.0f);
+	emitter4->GetTransform()->SetScale(15.0f, 0.1f, 10.0f);
+	emitter4->SetParticleSize(XMFLOAT2(1.0f, 1.0f));
+	emitter4->SetColorTint(XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f));
+	emitter4->SetVelocityMinMaxX(-0.1, 0.1);
+	emitter4->SetVelocityMinMaxY(0.0f, 0.0f);
+	emitter4->SetVelocityMinMaxZ(0.0f, 0.0f);
+	emitter4->SetSizeModifier(1);
+	emitter4->SetAlphaModifier(1);
+
+	emitters.push_back(emitter4);
+
+	Emitter* emitter5 = new Emitter(
+		100,
+		15,
+		2.0f,
+		EM_CUBE,
+		device,
+		context,
+		particleVS,
+		particlePS,
+		particleTexture5);
+
+	emitter5->GetTransform()->SetScale(15.0f, 10.0f, 1.0f);
+	emitter5->SetParticleSize(XMFLOAT2(0.25f, 0.25f));
+	emitter5->SetColorTint(XMFLOAT4(0.5f, 0.5f, 1.0f, 1.0f));
+	emitter5->SetVelocityMinMaxX(0.0f, 0.0f);
+	emitter5->SetVelocityMinMaxY(0.0f, 0.0f);
+	emitter5->SetVelocityMinMaxZ(0.0f, 0.0f);
+	emitter5->SetSizeModifier(-1);
+	emitter5->SetAlphaModifier(-1);
+
+	emitters.push_back(emitter5);
 
 	// Save assets needed for drawing point lights
 	// (Since these are just copies of the pointers,
@@ -965,6 +1069,42 @@ void Game::GenerateEmitterHeader(int i)
 		ImGui::Combo(ConcatStringAndInt("Shape##Em", i).c_str(), &shape, shapes, 3);
 		emitters[i]->SetShape(static_cast<Shape>(shape));
 
+		XMFLOAT2 particleSize = emitters[i]->GetParticleSize();
+		ImGui::InputFloat2(ConcatStringAndInt("Size##Em", i).c_str(), &particleSize.x);
+		emitters[i]->SetParticleSize(particleSize);
+
+		DirectX::XMFLOAT4 color = emitters[i]->GetColorTint();
+		ImGui::ColorEdit3(ConcatStringAndInt("Color##Em", i).c_str(), &color.x);
+		emitters[i]->SetColorTint(color);
+
+		XMFLOAT2 x = emitters[i]->GetVelocityMinMaxX();
+		ImGui::InputFloat2(ConcatStringAndInt("Velocity Range X##Em", i).c_str(), &x.x);
+		emitters[i]->SetVelocityMinMaxX(x.x, x.y);
+		
+		XMFLOAT2 y = emitters[i]->GetVelocityMinMaxY();
+		ImGui::InputFloat2(ConcatStringAndInt("Velocity Range Y##Em", i).c_str(), &y.x);
+		emitters[i]->SetVelocityMinMaxY(y.x, y.y);
+
+		XMFLOAT2 z = emitters[i]->GetVelocityMinMaxZ();
+		ImGui::InputFloat2(ConcatStringAndInt("Velocity Range Z##Em", i).c_str(), &z.x);
+		emitters[i]->SetVelocityMinMaxZ(z.x, z.y);
+
+		XMFLOAT3 acceleration = emitters[i]->GetAcceleration();
+		ImGui::InputFloat3(ConcatStringAndInt("Acceleration##Em", i).c_str(), &acceleration.x);
+		emitters[i]->SetAcceleration(acceleration);
+
+		int sizeModifier = emitters[i]->GetSizeModifier();
+		ImGui::RadioButton("No Change", &sizeModifier, 0); ImGui::SameLine();
+		ImGui::RadioButton("Grow", &sizeModifier, 1); ImGui::SameLine();
+		ImGui::RadioButton("Shrink", &sizeModifier, -1);
+		emitters[i]->SetSizeModifier(sizeModifier);
+
+		int alphaModifier = emitters[i]->GetAlphaModifier();
+		ImGui::RadioButton("No Change", &alphaModifier, 0); ImGui::SameLine();
+		ImGui::RadioButton("Fade Out", &alphaModifier, 1); ImGui::SameLine();
+		ImGui::RadioButton("Fade In", &alphaModifier, -1);
+		emitters[i]->SetAlphaModifier(alphaModifier);
+
 		// transform controls
 		ImGui::Text("Transform:");
 
@@ -972,9 +1112,9 @@ void Game::GenerateEmitterHeader(int i)
 		ImGui::InputFloat3(ConcatStringAndInt("Position##Em", i).c_str(), &pos.x);
 		emitters[i]->GetTransform()->SetPosition(pos.x, pos.y, pos.z);
 
-		XMFLOAT3 rot = emitters[i]->GetTransform()->GetPitchYawRoll();
+		/*XMFLOAT3 rot = emitters[i]->GetTransform()->GetPitchYawRoll();
 		ImGui::SliderFloat3(ConcatStringAndInt("Rotation##Em", i).c_str(), &rot.x, 0.0f, 6.28319f);
-		emitters[i]->GetTransform()->SetRotation(rot.x, rot.y, rot.z);
+		emitters[i]->GetTransform()->SetRotation(rot.x, rot.y, rot.z);*/
 
 		XMFLOAT3 scale = emitters[i]->GetTransform()->GetScale();
 		ImGui::InputFloat3(ConcatStringAndInt("Scale##Em", i).c_str(), &scale.x);

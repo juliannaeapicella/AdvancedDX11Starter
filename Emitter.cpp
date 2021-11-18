@@ -16,8 +16,19 @@ Emitter::Emitter(
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> texture) :
 	maxParticles(maxParticles),
 	particlesPerSec(particlesPerSec),
+	particleSize(XMFLOAT2(0.1f, 0.1f)),
+	sizeModifier(0),
+	alphaModifier(0),
+	maxX(1),
+	minX(-1),
+	maxY(1),
+	minY(-1),
+	maxZ(1),
+	minZ(-1),
+	acceleration(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f)),
 	lifetime(lifetime),
 	shape(shape),
+	colorTint(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f)),
 	context(context),
 	vs(vs),
 	ps(ps),
@@ -162,6 +173,8 @@ void Emitter::Draw(Camera* camera, float currentTime)
 
 	vs->SetShaderResourceView("ParticleData", particleDataSRV);
 	ps->SetShaderResourceView("Texture", texture);
+	ps->SetFloat4("ColorTint", colorTint);
+	ps->CopyAllBufferData();
 
 	vs->SetMatrix4x4("view", camera->GetView());
 	vs->SetMatrix4x4("projection", camera->GetProjection());
@@ -204,7 +217,16 @@ void Emitter::EmitParticle(float currentTime)
 		particles[spawnedIndex].StartingPosition = GeneratePointInSphere(transform->GetPosition(), transform->GetScale());
 	}
 
-	//particles[spawnedIndex].Size = 0.2f;
+	particles[spawnedIndex].Lifetime = lifetime;
+	particles[spawnedIndex].Size = particleSize;
+	particles[spawnedIndex].SizeModifier = sizeModifier;
+	particles[spawnedIndex].AlphaModifier = alphaModifier;
+
+	float velocityX = ((double)rand() / (RAND_MAX)) * (maxX - minX) + minX;
+	float velocityY = ((double)rand() / (RAND_MAX)) * (maxY - minY) + minY;
+	float velocityZ = ((double)rand() / (RAND_MAX)) * (maxZ - minZ) + minZ;
+	particles[spawnedIndex].Velocity = XMFLOAT3(velocityX, velocityY, velocityZ);
+	particles[spawnedIndex].Acceleration = acceleration;
 
 	indexFirstDead++;
 	indexFirstDead %= maxParticles; 
@@ -252,53 +274,8 @@ DirectX::XMFLOAT3 Emitter::GeneratePointInCube(DirectX::XMFLOAT3 position, Direc
 		(z * scale.z) + (position.z - (scale.z / 2)));
 }
 
-int Emitter::GetMaxParticles()
-{
-	return maxParticles;
-}
-
-int Emitter::GetLivingParticleCount()
-{
-	return livingParticleCount;
-}
-
-int Emitter::GetParticlesPerSec()
-{
-	return particlesPerSec;
-}
-
 void Emitter::SetParticlesPerSec(int particles)
 {
 	particlesPerSec = particles;
 	secondsPerParticle = 1.0f / particlesPerSec;
-}
-
-Shape Emitter::GetShape()
-{
-	return shape;
-}
-
-void Emitter::SetShape(Shape shape)
-{
-	this->shape = shape;
-}
-
-float Emitter::GetLifetime()
-{
-	return lifetime;
-}
-
-void Emitter::SetLifetime(float lifetime)
-{
-	this->lifetime = lifetime;
-}
-
-Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Emitter::GetTexture()
-{
-	return texture;
-}
-
-void Emitter::SetTexture(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> texture)
-{
-	this->texture = texture;
 }

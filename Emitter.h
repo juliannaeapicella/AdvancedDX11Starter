@@ -14,7 +14,13 @@ struct Particle
 {
 	float EmitTime;
 	DirectX::XMFLOAT3 StartingPosition;
-	//float Size;
+	float Lifetime;
+	DirectX::XMFLOAT2 Size;
+	int SizeModifier;
+	int AlphaModifier;
+	DirectX::XMFLOAT3 Velocity;
+	DirectX::XMFLOAT3 Acceleration;
+	float padding;
 };
 
 class Emitter
@@ -36,16 +42,38 @@ public:
 	void Update(float dt, float currentTime);
 	void Draw(Camera* camera, float currentTime);
 
-	int GetMaxParticles();
-	int GetLivingParticleCount();
-	int GetParticlesPerSec();
+	int GetMaxParticles() { return maxParticles; };
+	int GetLivingParticleCount() { return livingParticleCount; };
+	int GetParticlesPerSec() { return particlesPerSec; };
 	void SetParticlesPerSec(int particles);
-	Shape GetShape();
-	void SetShape(Shape shape);
-	float GetLifetime();
-	void SetLifetime(float lifetime);
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetTexture();
-	void SetTexture(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> texture);
+	DirectX::XMFLOAT2 GetParticleSize() { return particleSize; };
+	void SetParticleSize(DirectX::XMFLOAT2 particleSize) { this->particleSize = particleSize; };
+
+	int GetSizeModifier() { return sizeModifier; };
+	void SetSizeModifier(int sizeModifier) { this->sizeModifier = sizeModifier; };
+	int GetAlphaModifier() { return alphaModifier; };
+	void SetAlphaModifier(int alphaModifier) { this->alphaModifier = alphaModifier; };
+
+	Shape GetShape() { return shape; };
+	void SetShape(Shape shape) { this->shape = shape; };
+	DirectX::XMFLOAT4 GetColorTint() { return colorTint; };
+	void SetColorTint(DirectX::XMFLOAT4 color) { colorTint = color; };
+
+	DirectX::XMFLOAT2 GetVelocityMinMaxX() { return DirectX::XMFLOAT2(minX, maxX); };
+	DirectX::XMFLOAT2 GetVelocityMinMaxY() { return DirectX::XMFLOAT2(minY, maxY); };
+	DirectX::XMFLOAT2 GetVelocityMinMaxZ() { return DirectX::XMFLOAT2(minZ, maxZ); };
+	void SetVelocityMinMaxX(float min, float max) { minX = min; maxX = max; };
+	void SetVelocityMinMaxY(float min, float max) { minY = min; maxY = max; };
+	void SetVelocityMinMaxZ(float min, float max) { minZ = min; maxZ = max; };
+	DirectX::XMFLOAT3 GetAcceleration() { return acceleration; };
+	void SetAcceleration(DirectX::XMFLOAT3 acceleration) { this->acceleration = acceleration; };
+
+	float GetLifetime() { return lifetime; };
+	void SetLifetime(float lifetime) { this->lifetime = lifetime; };
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetTexture() { return texture; };
+	void SetTexture(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> texture) { this->texture = texture; };
+
 	Transform* GetTransform() { return transform; };
 
 private:
@@ -55,12 +83,25 @@ private:
 	int indexFirstDead;
 	int indexFirstAlive;
 	int livingParticleCount;
+	DirectX::XMFLOAT2 particleSize;
+	int sizeModifier;
+	int alphaModifier;
 
 	// emission
 	int particlesPerSec;
 	float secondsPerParticle;
 	float timeSinceLastEmit;
 	Shape shape;
+	DirectX::XMFLOAT4 colorTint;
+
+	// velocity
+	float maxX;
+	float minX;
+	float maxY;
+	float minY;
+	float maxZ;
+	float minZ;
+	DirectX::XMFLOAT3 acceleration;
 
 	// system
 	float lifetime;
