@@ -12,7 +12,7 @@ public:
 	Marble(physx::PxPhysics* physics, physx::PxScene* scene, physx::PxMaterial* material, GameEntity* entity);
 	~Marble();
 
-	void Move(Input& input);
+	void Move(Input& input, float dt);
 	void UpdateEntity();
 
 	GameEntity* GetEntity();

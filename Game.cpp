@@ -83,6 +83,7 @@ Game::~Game()
 	delete arial;
 	delete spriteBatch;
 	delete marble;
+	delete terrain;
 
 	// Delete singletons
 	delete& Input::GetInstance();
@@ -162,45 +163,13 @@ void Game::Init()
 	PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, physx::PxPlane(0, 1.0f, 0, 2.5f), *mMaterial);
 	mScene->addActor(*groundPlane);
 
-	// make into new class
-	/*std::vector<PxVec3> verts;
-	std::vector<Vertex> vertices = meshes[1]->GetVertices();
-	unsigned int nbVerts = meshes[1]->GetNumVertices();
-	for (unsigned int i = 0; i < nbVerts; i++) {
-		XMFLOAT3 vert = vertices[i].Position;
+	Mesh* mesh = new Mesh(GetFullPathTo("../../Assets/Models/Funbox.obj").c_str(), device);
+	meshes.push_back(mesh);
+	
+	ramp = new CollisionMesh(mesh, materials[1], mMaterial, mCooking, mPhysics, 2);
 
-		verts.push_back(PxVec3(
-			vert.x,
-			vert.y,
-			vert.z
-		));
-	}
-
-	PxConvexMeshDesc convexDesc;
-	convexDesc.points.count = 5;
-	convexDesc.points.stride = sizeof(PxVec3);
-	convexDesc.points.data = &verts[0];
-	convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
-
-	PxDefaultMemoryOutputStream buf;
-	if (!mCooking->cookConvexMesh(convexDesc, buf)) return;
-	PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
-	PxConvexMesh* convexMesh = mPhysics->createConvexMesh(input);
-
-	PxMeshScale scale(PxVec3(2.0f, 2.0f, 2.0f));
-	PxShape* aConvexShape = mPhysics->createShape(PxConvexMeshGeometry(convexMesh, scale), *mMaterial);
-	aConvexActor = mPhysics->createRigidStatic(PxTransform(PxVec3(0, -2, 0)));
-	aConvexActor->attachShape(*aConvexShape);
-
-	mScene->addActor(*aConvexActor);
-
-	aConvexShape->release();
-
-	GameEntity* test = new GameEntity(meshes[1], materials[0]);
-	PxVec3 pos = aConvexActor->getGlobalPose().p;
-	test->GetTransform()->SetPosition(pos.x, pos.y, pos.z); // move half the mesh's width and height to center
-	//test->GetTransform()->Scale(2, 2, 2);
-	entities.push_back(test);*/
+	mScene->addActor(*ramp->GetBody());
+	entities.push_back(ramp->GetEntity());
 
 	marble = new Marble(mPhysics, mScene, mMaterial, entities[0]);
 }
@@ -445,6 +414,12 @@ void Game::LoadAssetsAndCreateEntities()
 	bronzeSpherePBR->GetTransform()->SetPosition(0, 0, 0);
 	entities.push_back(bronzeSpherePBR);
 
+	SimplePixelShader* terrainPS = LoadShader(SimplePixelShader, L"TerrainPS.cso");
+	SimpleVertexShader* terrainVS = LoadShader(SimpleVertexShader, L"TerrainVS.cso");
+
+	shaders.push_back(terrainPS);
+	shaders.push_back(terrainVS);
+
 	Mesh* terrainMesh = new TerrainMesh(
 		device,
 		GetFullPathTo("../../Assets/Textures/Terrain/valley.raw16").c_str(),
@@ -457,9 +432,31 @@ void Game::LoadAssetsAndCreateEntities()
 
 	meshes.push_back(terrainMesh);
 
-	GameEntity* terrainEntity = new GameEntity(terrainMesh, woodMatPBR);
+	LoadTexture(L"../../Assets/Textures/Terrain/valley_splat.png", terrainBlendMapSRV);
+	LoadTexture(L"../../Assets/Textures/Terrain/snow.jpg", terrainTexture0SRV);
+	LoadTexture(L"../../Assets/Textures/Terrain/grass3.png", terrainTexture1SRV);
+	LoadTexture(L"../../Assets/Textures/Terrain/mountain3.png", terrainTexture2SRV);
+	LoadTexture(L"../../Assets/Textures/Terrain/snow_normals.jpg", terrainNormals0SRV);
+	LoadTexture(L"../../Assets/Textures/Terrain/grass3_normals.png", terrainNormals1SRV);
+	LoadTexture(L"../../Assets/Textures/Terrain/mountain3_normals.png", terrainNormals2SRV);
 
-	entities.push_back(terrainEntity);
+	textures.push_back(terrainBlendMapSRV); 
+	textures.push_back(terrainTexture0SRV); textures.push_back(terrainTexture1SRV); textures.push_back(terrainTexture2SRV);
+	textures.push_back(terrainNormals0SRV); textures.push_back(terrainNormals1SRV); textures.push_back(terrainNormals2SRV);
+
+	terrain = new TerrainEntity(
+		terrainMesh,
+		terrainPS,
+		terrainVS,
+		terrainBlendMapSRV,
+		terrainTexture0SRV,
+		terrainTexture1SRV,
+		terrainTexture2SRV,
+		terrainNormals0SRV,
+		terrainNormals1SRV,
+		terrainNormals2SRV,
+		samplerOptions
+	);
 
 	// Save assets needed for drawing point lights
 	// (Since these are just copies of the pointers,
@@ -478,6 +475,7 @@ void Game::LoadAssetsAndCreateEntities()
 		this->width,
 		this->height,
 		sky,
+		terrain,
 		entities,
 		lights,
 		lightMesh,
@@ -581,7 +579,7 @@ void Game::Update(float deltaTime, float totalTime)
 	if (input.KeyPress(VK_TAB)) GenerateLights();
 
 	// PhysX
-	marble->Move(input);
+	marble->Move(input, deltaTime);
 
 	mScene->simulate(1.0f/60.0f);
 	mScene->fetchResults(true); 

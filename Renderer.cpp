@@ -18,6 +18,7 @@ Renderer::Renderer(
 	unsigned int width, 
 	unsigned int height, 
 	Sky* sky, 
+	TerrainEntity* terrain,
 	const std::vector<GameEntity*>& entities, 
 	const std::vector<Light>& lights,
 	Mesh* lightMesh,
@@ -32,6 +33,7 @@ Renderer::Renderer(
 		windowWidth(width),
 		windowHeight(height),
 		sky(sky),
+		terrain(terrain),
 		entities(entities),
 		lights(lights),
 		lightMesh(lightMesh), 
@@ -163,6 +165,8 @@ void Renderer::Render(Camera* camera)
 
 	// Draw the light sources
 	//DrawPointLights(camera);
+
+	terrain->Draw(context, camera);
 
 	// Draw the sky
 	sky->Draw(camera);

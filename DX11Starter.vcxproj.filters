@@ -90,6 +90,12 @@
     <ClCompile Include="TerrainMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TerrainEntity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CollisionMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vertex.h">
@@ -164,6 +170,12 @@
     <ClInclude Include="TerrainMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TerrainEntity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CollisionMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -191,6 +203,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="TerrainPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="TerrainVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

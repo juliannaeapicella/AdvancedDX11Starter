@@ -22,12 +22,14 @@ Marble::Marble(physx::PxPhysics* physics, physx::PxScene* scene, physx::PxMateri
 
 Marble::~Marble() {}
 
-void Marble::Move(Input& input)
+void Marble::Move(Input& input, float dt)
 {
-	if (input.KeyDown('W')) { body->addForce(PxVec3(0, 0, 1)); }
-	if (input.KeyDown('S')) { body->addForce(PxVec3(0, 0, -1)); }
-	if (input.KeyDown('A')) { body->addForce(PxVec3(-1, 0, 0)); }
-	if (input.KeyDown('D')) { body->addForce(PxVec3(1, 0, 0)); }
+	float speed = dt * 500.0f;
+
+	if (input.KeyDown('W')) { body->addForce(PxVec3(0, 0, speed)); }
+	if (input.KeyDown('S')) { body->addForce(PxVec3(0, 0, -speed)); }
+	if (input.KeyDown('A')) { body->addForce(PxVec3(-speed, 0, 0)); }
+	if (input.KeyDown('D')) { body->addForce(PxVec3(speed, 0, 0)); }
 
 	// prevent this rigid body from sleeping so it rolls even when not directly pushed
 	body->wakeUp();

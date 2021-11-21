@@ -13,6 +13,8 @@
 #include "Sky.h"
 #include "Input.h"
 #include "Marble.h"
+#include "TerrainEntity.h"
+#include "CollisionMesh.h"
 
 #include <PxPhysics.h>
 #include <PxPhysicsAPI.h>
@@ -81,9 +83,7 @@ private:
 	Sky* sky;
 
 	// Terrain resources
-	//GameEntity* terrainEntity;
-	//Mesh* terrainMesh;
-	//SimplePixelShader* terrainPS;
+	TerrainEntity* terrain;
 
 	// Blend (or "splat") map
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainBlendMapSRV;
@@ -130,8 +130,7 @@ private:
 	physx::PxScene* mScene;
 	physx::PxMaterial* mMaterial;
 
-	physx::PxRigidStatic* aConvexActor;
-	physx::PxRigidStatic* aTriangleActor;
+	CollisionMesh* ramp;
 };
 
 /// <summary>

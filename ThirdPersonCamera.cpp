@@ -42,16 +42,16 @@ void ThirdPersonCamera::Update(float dt)
 	Transform* cameraTransform = camera->GetTransform();
 
 	// Current speed
-	float speed = dt * 3.0f;
+	float speed = dt * 1.0f;
 
 	// Get the input manager instance
 	Input& input = Input::GetInstance();
 
 	// Movement
-	if (input.KeyDown(VK_RIGHT)) { pivot->Rotate(0, 0.001f, 0); }
-	if (input.KeyDown(VK_LEFT)) { pivot->Rotate(0, -0.001f, 0); }
-	if (input.KeyDown(VK_UP)) { pivot->Rotate(0.001f, 0, 0); }
-	if (input.KeyDown(VK_DOWN)) { pivot->Rotate(-0.001f, 0, 0); }
+	if (input.KeyDown(VK_RIGHT)) { pivot->Rotate(0, speed, 0); }
+	if (input.KeyDown(VK_LEFT)) { pivot->Rotate(0, -speed, 0); }
+	if (input.KeyDown(VK_UP)) { pivot->Rotate(speed, 0, 0); }
+	if (input.KeyDown(VK_DOWN)) { pivot->Rotate(-speed, 0, 0); }
 
 	XMFLOAT3 entityPos = entity->GetTransform()->GetPosition();
 	pivot->SetPosition(entityPos.x, entityPos.y, entityPos.z);
