@@ -4,6 +4,7 @@
 #include "Game.h"
 #include "Vertex.h"
 #include "Input.h"
+#include "TerrainMesh.h"
 
 #include "ImGUI/imgui.h"
 #include "WICTextureLoader.h"
@@ -95,6 +96,7 @@ Game::~Game()
 	mPhysics->release();
 	mDispatcher->release();
 	mFoundation->release();
+	mCooking->release();
 }
 
 // --------------------------------------------------------
@@ -145,6 +147,9 @@ void Game::Init()
 	mToleranceScale.speed = 981;         // typical speed of an object, gravity*1s is a reasonable choice
 	mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale, true, NULL);
 
+	mCooking = PxCreateCooking(PX_PHYSICS_VERSION, *mFoundation, PxCookingParams(mToleranceScale));
+	if (!mCooking) throw("PxCreateCooking failed!");
+
 	PxSceneDesc sceneDesc(mPhysics->getTolerancesScale());
 	sceneDesc.gravity = PxVec3(0.0f, -1.81f, 0.0f);
 	mDispatcher = PxDefaultCpuDispatcherCreate(2);
@@ -154,8 +159,48 @@ void Game::Init()
 	mScene = mPhysics->createScene(sceneDesc);
 
 	mMaterial = mPhysics->createMaterial(0.5f, 0.5f, 0.6f);
-	PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, physx::PxPlane(0, 1, 0, 2.5), *mMaterial);
+	PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, physx::PxPlane(0, 1.0f, 0, 2.5f), *mMaterial);
 	mScene->addActor(*groundPlane);
+
+	// make into new class
+	/*std::vector<PxVec3> verts;
+	std::vector<Vertex> vertices = meshes[1]->GetVertices();
+	unsigned int nbVerts = meshes[1]->GetNumVertices();
+	for (unsigned int i = 0; i < nbVerts; i++) {
+		XMFLOAT3 vert = vertices[i].Position;
+
+		verts.push_back(PxVec3(
+			vert.x,
+			vert.y,
+			vert.z
+		));
+	}
+
+	PxConvexMeshDesc convexDesc;
+	convexDesc.points.count = 5;
+	convexDesc.points.stride = sizeof(PxVec3);
+	convexDesc.points.data = &verts[0];
+	convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
+
+	PxDefaultMemoryOutputStream buf;
+	if (!mCooking->cookConvexMesh(convexDesc, buf)) return;
+	PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
+	PxConvexMesh* convexMesh = mPhysics->createConvexMesh(input);
+
+	PxMeshScale scale(PxVec3(2.0f, 2.0f, 2.0f));
+	PxShape* aConvexShape = mPhysics->createShape(PxConvexMeshGeometry(convexMesh, scale), *mMaterial);
+	aConvexActor = mPhysics->createRigidStatic(PxTransform(PxVec3(0, -2, 0)));
+	aConvexActor->attachShape(*aConvexShape);
+
+	mScene->addActor(*aConvexActor);
+
+	aConvexShape->release();
+
+	GameEntity* test = new GameEntity(meshes[1], materials[0]);
+	PxVec3 pos = aConvexActor->getGlobalPose().p;
+	test->GetTransform()->SetPosition(pos.x, pos.y, pos.z); // move half the mesh's width and height to center
+	//test->GetTransform()->Scale(2, 2, 2);
+	entities.push_back(test);*/
 
 	marble = new Marble(mPhysics, mScene, mMaterial, entities[0]);
 }
@@ -399,6 +444,22 @@ void Game::LoadAssetsAndCreateEntities()
 	GameEntity* bronzeSpherePBR = new GameEntity(sphereMesh, bronzeMatPBR);
 	bronzeSpherePBR->GetTransform()->SetPosition(0, 0, 0);
 	entities.push_back(bronzeSpherePBR);
+
+	Mesh* terrainMesh = new TerrainMesh(
+		device,
+		GetFullPathTo("../../Assets/Textures/Terrain/valley.raw16").c_str(),
+		513,
+		513,
+		BitDepth_16,
+		5.0f,
+		0.05f,
+		1.0f);
+
+	meshes.push_back(terrainMesh);
+
+	GameEntity* terrainEntity = new GameEntity(terrainMesh, woodMatPBR);
+
+	entities.push_back(terrainEntity);
 
 	// Save assets needed for drawing point lights
 	// (Since these are just copies of the pointers,

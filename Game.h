@@ -124,10 +124,14 @@ private:
 	physx::PxDefaultCpuDispatcher* mDispatcher;
 	physx::PxTolerancesScale mToleranceScale;
 	physx::PxFoundation* mFoundation;
+	physx::PxCooking* mCooking;
 	physx::PxPhysics* mPhysics;
 
 	physx::PxScene* mScene;
 	physx::PxMaterial* mMaterial;
+
+	physx::PxRigidStatic* aConvexActor;
+	physx::PxRigidStatic* aTriangleActor;
 };
 
 /// <summary>

@@ -1,6 +1,5 @@
 #include "Mesh.h"
 #include <DirectXMath.h>
-#include <vector>
 #include <fstream>
 
 #include <assimp/Importer.hpp>
@@ -35,7 +34,6 @@ Mesh::Mesh(const char* objFile, Microsoft::WRL::ComPtr<ID3D11Device> device)
 	aiMesh* mesh = scene->mMeshes[0];
 
 	// build vertices
-	std::vector<Vertex> vertices;
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
 		Vertex v = {};
 		v.Position.x = mesh->mVertices[i].x;
@@ -63,7 +61,6 @@ Mesh::Mesh(const char* objFile, Microsoft::WRL::ComPtr<ID3D11Device> device)
 	}
 
 	// build indices
-	std::vector<unsigned int> indices;
 	for (unsigned int f = 0; f < mesh->mNumFaces; f++) {
 		for (unsigned int i = 0; i < mesh->mFaces[f].mNumIndices; i++) {
 			unsigned int index = mesh->mFaces[f].mIndices[i];

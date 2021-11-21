@@ -7,7 +7,7 @@ Marble::Marble(physx::PxPhysics* physics, physx::PxScene* scene, physx::PxMateri
 	this->entity = entity;
 
 	// create sphere geometry
-	PxShape* shape = physics->createShape(PxSphereGeometry(1.0f), *material, true);
+	PxShape* shape = physics->createShape(PxSphereGeometry(0.5f), *material, true);
 
 	// create dynamic rigid body
 	body = physics->createRigidDynamic(PxTransform(PxVec3(0, 5, 0)));
@@ -24,10 +24,10 @@ Marble::~Marble() {}
 
 void Marble::Move(Input& input)
 {
-	if (input.KeyDown('W')) { body->addForce(PxVec3(0, 0, 5)); }
-	if (input.KeyDown('S')) { body->addForce(PxVec3(0, 0, -5)); }
-	if (input.KeyDown('A')) { body->addForce(PxVec3(-5, 0, 0)); }
-	if (input.KeyDown('D')) { body->addForce(PxVec3(5, 0, 0)); }
+	if (input.KeyDown('W')) { body->addForce(PxVec3(0, 0, 1)); }
+	if (input.KeyDown('S')) { body->addForce(PxVec3(0, 0, -1)); }
+	if (input.KeyDown('A')) { body->addForce(PxVec3(-1, 0, 0)); }
+	if (input.KeyDown('D')) { body->addForce(PxVec3(1, 0, 0)); }
 
 	// prevent this rigid body from sleeping so it rolls even when not directly pushed
 	body->wakeUp();
