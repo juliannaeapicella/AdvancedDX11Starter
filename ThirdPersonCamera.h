@@ -11,6 +11,8 @@ public:
 	~ThirdPersonCamera();
 
 	Camera* GetCamera();
+	DirectX::XMFLOAT2 GetForwardVector();
+	DirectX::XMFLOAT2 GetRightVector();
 
 	void Update(float dt);
 private:

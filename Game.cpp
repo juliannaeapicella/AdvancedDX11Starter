@@ -579,7 +579,7 @@ void Game::Update(float deltaTime, float totalTime)
 	if (input.KeyPress(VK_TAB)) GenerateLights();
 
 	// PhysX
-	marble->Move(input, deltaTime);
+	marble->Move(input, deltaTime, thirdPCamera->GetForwardVector(), thirdPCamera->GetRightVector());
 
 	mScene->simulate(1.0f/60.0f);
 	mScene->fetchResults(true); 
@@ -804,7 +804,7 @@ void Game::GenerateCameraHeader()
 {
 	if (ImGui::CollapsingHeader("Cameras")) {
 		// camera information - only one right now
-		ImGui::Text("Current Camera: First-Person Controllable");
+		ImGui::Text("Current Camera: Third-Person Controllable");
 
 		// set position
 		XMFLOAT3 pos = camera->GetTransform()->GetPosition();
@@ -815,6 +815,13 @@ void Game::GenerateCameraHeader()
 		XMFLOAT3 rot = camera->GetTransform()->GetPitchYawRoll();
 		ImGui::SliderFloat2("Rotation##C", &rot.x, 0.0f, 6.28319f);
 		camera->GetTransform()->SetRotation(rot.x, rot.y, rot.z);
+
+		// show directional vectors
+		XMFLOAT2 forward = thirdPCamera->GetForwardVector();
+		ImGui::InputFloat2("Forward Vector##C", &forward.x);
+
+		XMFLOAT2 right = thirdPCamera->GetRightVector();
+		ImGui::InputFloat2("Right Vector##C", &right.x);
 	}
 }
 

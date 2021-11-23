@@ -37,6 +37,32 @@ Camera* ThirdPersonCamera::GetCamera()
 	return camera;
 }
 
+DirectX::XMFLOAT2 ThirdPersonCamera::GetForwardVector()
+{
+	XMFLOAT3 camPos = camera->GetTransform()->GetPosition();
+	XMFLOAT3 pivotPos = entity->GetTransform()->GetPosition();
+	XMVECTOR camVector = XMLoadFloat3(&camPos);
+	XMVECTOR pivotVector = XMLoadFloat3(&pivotPos);
+
+	XMFLOAT3 result;
+	XMStoreFloat3(&result, XMVector3Normalize(pivotVector - camVector));
+
+	return XMFLOAT2(
+		result.x,
+		result.z
+	);
+}
+
+DirectX::XMFLOAT2 ThirdPersonCamera::GetRightVector()
+{
+	XMFLOAT2 forward = GetForwardVector();
+
+	return XMFLOAT2(
+		forward.y,
+		-forward.x
+	);
+}
+
 void ThirdPersonCamera::Update(float dt)
 {
 	Transform* cameraTransform = camera->GetTransform();
