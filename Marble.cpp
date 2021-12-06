@@ -25,7 +25,7 @@ Marble::~Marble() {}
 
 void Marble::Move(Input& input, float dt, DirectX::XMFLOAT2 forward, DirectX::XMFLOAT2 right)
 {
-	float speed = dt * 1000.0f;
+	float speed = dt * 1500.0f;
 
 	PxVec3 velocity = body->getLinearVelocity();
 

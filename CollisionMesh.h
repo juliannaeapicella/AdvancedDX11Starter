@@ -9,7 +9,7 @@
 class CollisionMesh
 {
 public:
-	CollisionMesh(Mesh* mesh, Material* texture, physx::PxMaterial* material, physx::PxCooking* cooking, physx::PxPhysics* physics, physx::PxVec3 scaleBy, physx::PxVec3 position);
+	CollisionMesh(Mesh* mesh, physx::PxU32 tris, Material* texture, physx::PxMaterial* material, physx::PxCooking* cooking, physx::PxPhysics* physics, physx::PxVec3 scaleBy, physx::PxVec3 position, float rotation);
 	~CollisionMesh();
 
 	physx::PxRigidStatic* GetBody(); 
