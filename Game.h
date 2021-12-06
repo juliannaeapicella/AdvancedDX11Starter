@@ -130,7 +130,7 @@ private:
 	physx::PxScene* mScene;
 	physx::PxMaterial* mMaterial;
 
-	CollisionMesh* ramp;
+	std::vector<CollisionMesh*> levelBlocks;
 };
 
 /// <summary>

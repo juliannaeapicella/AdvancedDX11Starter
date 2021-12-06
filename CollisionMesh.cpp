@@ -3,7 +3,7 @@
 using namespace physx;
 using namespace DirectX;
 
-CollisionMesh::CollisionMesh(Mesh* mesh, Material* texture, physx::PxMaterial* material, physx::PxCooking* cooking, physx::PxPhysics* physics, int scaleBy)
+CollisionMesh::CollisionMesh(Mesh* mesh, Material* texture, physx::PxMaterial* material, physx::PxCooking* cooking, physx::PxPhysics* physics, physx::PxVec3 scaleBy, physx::PxVec3 position)
 {
 	std::vector<PxVec3> verts;
 	std::vector<Vertex> vertices = mesh->GetVertices();
@@ -27,7 +27,7 @@ CollisionMesh::CollisionMesh(Mesh* mesh, Material* texture, physx::PxMaterial* m
 	meshDesc.points.stride = sizeof(PxVec3);
 	meshDesc.points.data = &verts[0];
 
-	meshDesc.triangles.count = 144;
+	meshDesc.triangles.count = 12;
 	meshDesc.triangles.stride = 3 * sizeof(unsigned int);
 	meshDesc.triangles.data = &indices[0];
 
@@ -40,9 +40,9 @@ CollisionMesh::CollisionMesh(Mesh* mesh, Material* texture, physx::PxMaterial* m
 	PxDefaultMemoryInputData readBuffer(writeBuffer.getData(), writeBuffer.getSize());
 	PxTriangleMesh* triMesh = physics->createTriangleMesh(readBuffer);
 
-	PxMeshScale scale(PxVec3(scaleBy, scaleBy, scaleBy));
+	PxMeshScale scale(PxVec3(scaleBy.x, scaleBy.y, scaleBy.z));
 	PxShape* aTriShape = physics->createShape(PxTriangleMeshGeometry(triMesh, scale), *material);
-	body = physics->createRigidStatic(PxTransform(PxVec3(0, -2.5, 0)));
+	body = physics->createRigidStatic(PxTransform(position));
 	body->attachShape(*aTriShape);
 
 	aTriShape->release();
@@ -51,7 +51,7 @@ CollisionMesh::CollisionMesh(Mesh* mesh, Material* texture, physx::PxMaterial* m
 	entity = new GameEntity(mesh, texture);
 	PxVec3 pos = body->getGlobalPose().p;
 	entity->GetTransform()->SetPosition(pos.x, pos.y, pos.z);
-	entity->GetTransform()->SetScale(scaleBy, scaleBy, scaleBy);
+	entity->GetTransform()->SetScale(scaleBy.x, scaleBy.y, scaleBy.z);
 }
 
 CollisionMesh::~CollisionMesh() {}

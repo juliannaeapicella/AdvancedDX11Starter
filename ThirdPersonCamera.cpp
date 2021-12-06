@@ -23,6 +23,8 @@ ThirdPersonCamera::ThirdPersonCamera(GameEntity* entity, float aspectRatio)
 	cameraPos->SetPosition(pos.x, pos.y, pos.z);
 
 	pivot->AddChild(cameraPos);
+
+	pivot->Rotate(0.5, -2.5, 0);
 }
 
 ThirdPersonCamera::~ThirdPersonCamera()

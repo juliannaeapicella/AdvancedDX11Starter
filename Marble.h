@@ -20,7 +20,5 @@ public:
 private:
 	physx::PxRigidDynamic* body;
 	GameEntity* entity;
-
-	float CalculateCurrentSpeed(physx::PxVec3 velocity);
 };
 

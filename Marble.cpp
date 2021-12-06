@@ -11,7 +11,7 @@ Marble::Marble(physx::PxPhysics* physics, physx::PxScene* scene, physx::PxMateri
 	PxShape* shape = physics->createShape(PxSphereGeometry(0.5f), *material, true);
 
 	// create dynamic rigid body
-	body = physics->createRigidDynamic(PxTransform(PxVec3(0, 5, 0)));
+	body = physics->createRigidDynamic(PxTransform(PxVec3(0, 35, 0)));
 	body->attachShape(*shape);
 	PxRigidBodyExt::updateMassAndInertia(*body, 10.0f);
 
@@ -25,42 +25,49 @@ Marble::~Marble() {}
 
 void Marble::Move(Input& input, float dt, DirectX::XMFLOAT2 forward, DirectX::XMFLOAT2 right)
 {
-	float speed = dt * 500.0f;
+	float speed = dt * 1000.0f;
 
-	float curSpeed = CalculateCurrentSpeed(body->getLinearVelocity());
+	PxVec3 velocity = body->getLinearVelocity();
 
-	if (curSpeed < 4.0f) {
-		PxVec3 force = PxVec3(0, 0, 0);
-		if (input.KeyDown('W')) {
-			force = PxVec3(
-				forward.x * speed,
-				0,
-				forward.y * speed
-			);
-		}
-		if (input.KeyDown('S')) {
-			force = PxVec3(
-				-forward.x * speed,
-				0,
-				-forward.y * speed
-			);
-		}
-		if (input.KeyDown('A')) {
-			force = PxVec3(
-				-right.x * speed,
-				0,
-				-right.y * speed
-			);
-		}
-		if (input.KeyDown('D')) {
-			force = PxVec3(
-				right.x * speed,
-				0,
-				right.y * speed
-			);
-		}
-		body->addForce(force);
+	PxVec3 force = PxVec3(0, 0, 0);
+	if (input.KeyDown('W')) {
+		force = PxVec3(
+			forward.x * speed,
+			0,
+			forward.y * speed
+		);
 	}
+	if (input.KeyDown('S')) {
+		force = PxVec3(
+			-forward.x * speed,
+			0,
+			-forward.y * speed
+		);
+	}
+	if (input.KeyDown('A')) {
+		force = PxVec3(
+			-right.x * speed,
+			0,
+			-right.y * speed
+		);
+	}
+	if (input.KeyDown('D')) {
+		force = PxVec3(
+			right.x * speed,
+			0,
+			right.y * speed
+		);
+	}
+
+	if ((velocity.x >= 2 && force.x > 0) || (velocity.x <= -2 && force.x < 0))
+	{
+		force.x = 0;
+	}
+	if ((velocity.z >= 2 && force.z > 0) || (velocity.z <= -2 && force.z < 0)) {
+		force.z = 0;
+	}
+
+	body->addForce(force);
 
 	// prevent this rigid body from sleeping so it rolls even when not directly pushed
 	body->wakeUp();
@@ -79,19 +86,4 @@ void Marble::UpdateEntity()
 GameEntity* Marble::GetEntity()
 {
 	return entity;
-}
-
-float Marble::CalculateCurrentSpeed(physx::PxVec3 velocity)
-{
-	XMFLOAT3 velocityDX = XMFLOAT3(
-		velocity.x,
-		velocity.y,
-		velocity.z
-	);
-	XMVECTOR v = XMLoadFloat3(&velocityDX);
-
-	XMFLOAT3 curSpeed;
-	XMStoreFloat3(&curSpeed, XMVector3Length(v));
-
-	return curSpeed.x;
 }
