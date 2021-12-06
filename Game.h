@@ -117,6 +117,8 @@ private:
 
 	// Initialization helper method
 	void LoadAssetsAndCreateEntities();
+	void InitializePhysX();
+	void CreatePhysXActors();
 
 	// PhysX stuff
 	physx::PxDefaultAllocator mDefaultAllocatorCallback;

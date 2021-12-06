@@ -143,333 +143,8 @@ void Game::Init()
 	ImGui_ImplDX11_Init(device.Get(), context.Get());
 
 	// PhysX
-	mFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, mDefaultAllocatorCallback, mDefaultErrorCallback);
-	if (!mFoundation) throw("PxCreateFoundation failed!");
-	mToleranceScale.length = 100;        // typical length of an object
-	mToleranceScale.speed = 981;         // typical speed of an object, gravity*1s is a reasonable choice
-	mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale, true, NULL);
-
-	mCooking = PxCreateCooking(PX_PHYSICS_VERSION, *mFoundation, PxCookingParams(mToleranceScale));
-	if (!mCooking) throw("PxCreateCooking failed!");
-
-	PxSceneDesc sceneDesc(mPhysics->getTolerancesScale());
-	sceneDesc.gravity = PxVec3(0.0f, -3.62f, 0.0f);
-	mDispatcher = PxDefaultCpuDispatcherCreate(2);
-	sceneDesc.cpuDispatcher = mDispatcher;
-	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
-	sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVE_ACTORS;
-	mScene = mPhysics->createScene(sceneDesc);
-
-	mMaterial = mPhysics->createMaterial(3.0f, 3.0f, 0.6f);
-	PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, physx::PxPlane(0, 1.0f, 0, 2.5f), *mMaterial);
-	mScene->addActor(*groundPlane);
-	
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2], 
-			12,
-			materials[1], 
-			mMaterial, 
-			mCooking, 
-			mPhysics,
-			PxVec3(6, 4, 6), 
-			PxVec3(0, 25.5f, 0),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(6, 30, 18),
-			PxVec3(-6, 12.5f, 12),
-			0.0f));
-	
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(12, 30, 6),
-			PxVec3(9, 12.5f, -6),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(6, 26, 6),
-			PxVec3(18, 10.5f, -6),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(24, 26, 12),
-			PxVec3(9, 10.5, 3),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(4, 26, 12),
-			PxVec3(-1, 10.5, 15),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(2, 26, 6),
-			PxVec3(2, 10.5, 18),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(8, 22, 6),
-			PxVec3(5, 8.5, 12),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(10, 20, 6),
-			PxVec3(8, 7.5, 18),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(8, 18, 6),
-			PxVec3(17, 6.5, 18),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(6, 18, 6),
-			PxVec3(18, 6.5, 12),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(4, 16, 6),
-			PxVec3(23, 5.5, 18),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(6, 14, 6),
-			PxVec3(28, 4.5, 18),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(meshes[2],
-			12,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(6, 12, 6),
-			PxVec3(28, 3.5, 24),
-			0.0f));
-
-	Mesh* ramp = new Mesh(GetFullPathTo("../../Assets/Models/Ramp.obj").c_str(), device);
-	meshes.push_back(ramp);
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(4, 4, 6),
-			PxVec3(5, 25.5f, 0),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(4, 4, 6),
-			PxVec3(0, 25.5f, 5),
-			-1.575f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(6, 4, 6),
-			PxVec3(18, 25.5f, -6),
-			-1.575f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(6, 8, 6),
-			PxVec3(18, 19.5f, 12),
-			-1.575f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(4, 4, 6),
-			PxVec3(3, 21.5f, 12),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(2, 2, 4),
-			PxVec3(7, 18.5f, 16),
-			-1.575f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(2, 2, 6),
-			PxVec3(14, 16.5f, 18),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(2, 2, 6),
-			PxVec3(22, 14.5f, 18),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(2, 2, 6),
-			PxVec3(26, 12.5f, 18),
-			0.0f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(2, 2, 6),
-			PxVec3(28, 10.5f, 22),
-			-1.575f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(2, 2, 6),
-			PxVec3(28, 10.5f, 26),
-			1.575f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(2, 2, 6),
-			PxVec3(30, 10.5f, 24),
-			3.15f));
-
-	levelBlocks.push_back(
-		new CollisionMesh(ramp,
-			8,
-			materials[1],
-			mMaterial,
-			mCooking,
-			mPhysics,
-			PxVec3(2, 2, 6),
-			PxVec3(26, 10.5f, 24),
-			0.0f));
-
-	for (int i = 0; i < levelBlocks.size(); i++) {
-		mScene->addActor(*levelBlocks[i]->GetBody());
-		entities.push_back(levelBlocks[i]->GetEntity());
-	}
-
-	marble = new Marble(mPhysics, mScene, mMaterial, entities[0]);
+	InitializePhysX();
+	CreatePhysXActors();
 }
 
 
@@ -500,14 +175,12 @@ void Game::LoadAssetsAndCreateEntities()
 
 	// Make the meshes
 	Mesh* sphereMesh = new Mesh(GetFullPathTo("../../Assets/Models/sphere.obj").c_str(), device);
-	Mesh* helixMesh = new Mesh(GetFullPathTo("../../Assets/Models/helix.obj").c_str(), device);
 	Mesh* cubeMesh = new Mesh(GetFullPathTo("../../Assets/Models/cube.obj").c_str(), device);
-	Mesh* coneMesh = new Mesh(GetFullPathTo("../../Assets/Models/cone.obj").c_str(), device);
+	Mesh* rampMesh = new Mesh(GetFullPathTo("../../Assets/Models/Ramp.obj").c_str(), device);
 
 	meshes.push_back(sphereMesh);
-	meshes.push_back(helixMesh);
 	meshes.push_back(cubeMesh);
-	meshes.push_back(coneMesh);
+	meshes.push_back(rampMesh);
 	
 	// Declare the textures we'll need
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobbleA,  cobbleN,  cobbleR,  cobbleM;
@@ -632,88 +305,9 @@ void Game::LoadAssetsAndCreateEntities()
 	materials.push_back(roughMatPBR);
 	materials.push_back(woodMatPBR);
 
-	// === Create the PBR entities =====================================
-	/*GameEntity* cobSpherePBR = new GameEntity(sphereMesh, cobbleMat2xPBR);
-	cobSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	cobSpherePBR->GetTransform()->SetPosition(-6, 2, 0);
-
-	GameEntity* floorSpherePBR = new GameEntity(sphereMesh, floorMatPBR);
-	floorSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	floorSpherePBR->GetTransform()->SetPosition(-4, 2, 0);
-
-	GameEntity* paintSpherePBR = new GameEntity(sphereMesh, paintMatPBR);
-	paintSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	paintSpherePBR->GetTransform()->SetPosition(-2, 2, 0);
-
-	GameEntity* scratchSpherePBR = new GameEntity(sphereMesh, scratchedMatPBR);
-	scratchSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	scratchSpherePBR->GetTransform()->SetPosition(0, 2, 0);
-
-	GameEntity* bronzeSpherePBR = new GameEntity(sphereMesh, bronzeMatPBR);
-	bronzeSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	bronzeSpherePBR->GetTransform()->SetPosition(2, 2, 0);
-
-	GameEntity* roughSpherePBR = new GameEntity(sphereMesh, roughMatPBR);
-	roughSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	roughSpherePBR->GetTransform()->SetPosition(4, 2, 0);
-
-	GameEntity* woodSpherePBR = new GameEntity(sphereMesh, woodMatPBR);
-	woodSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	woodSpherePBR->GetTransform()->SetPosition(6, 2, 0);
-
-	entities.push_back(cobSpherePBR);
-	entities.push_back(floorSpherePBR);
-	entities.push_back(paintSpherePBR);
-	entities.push_back(scratchSpherePBR);
-	entities.push_back(bronzeSpherePBR);
-	entities.push_back(roughSpherePBR);
-	entities.push_back(woodSpherePBR);
-
-	// Create the non-PBR entities ==============================
-	GameEntity* cobSphere = new GameEntity(sphereMesh, cobbleMat2x);
-	cobSphere->GetTransform()->SetScale(2, 2, 2);
-	cobSphere->GetTransform()->SetPosition(-6, -2, 0);
-
-	GameEntity* floorSphere = new GameEntity(sphereMesh, floorMat);
-	floorSphere->GetTransform()->SetScale(2, 2, 2);
-	floorSphere->GetTransform()->SetPosition(-4, -2, 0);
-
-	GameEntity* paintSphere = new GameEntity(sphereMesh, paintMat);
-	paintSphere->GetTransform()->SetScale(2, 2, 2);
-	paintSphere->GetTransform()->SetPosition(-2, -2, 0);
-
-	GameEntity* scratchSphere = new GameEntity(sphereMesh, scratchedMat);
-	scratchSphere->GetTransform()->SetScale(2, 2, 2);
-	scratchSphere->GetTransform()->SetPosition(0, -2, 0);
-
-	GameEntity* bronzeSphere = new GameEntity(sphereMesh, bronzeMat);
-	bronzeSphere->GetTransform()->SetScale(2, 2, 2);
-	bronzeSphere->GetTransform()->SetPosition(2, -2, 0);
-
-	GameEntity* roughSphere = new GameEntity(sphereMesh, roughMat);
-	roughSphere->GetTransform()->SetScale(2, 2, 2);
-	roughSphere->GetTransform()->SetPosition(4, -2, 0);
-
-	GameEntity* woodSphere = new GameEntity(sphereMesh, woodMat);
-	woodSphere->GetTransform()->SetScale(2, 2, 2);
-	woodSphere->GetTransform()->SetPosition(6, -2, 0);
-
-	entities.push_back(cobSphere);
-	entities.push_back(floorSphere);
-	entities.push_back(paintSphere);
-	entities.push_back(scratchSphere);
-	entities.push_back(bronzeSphere);
-	entities.push_back(roughSphere);
-	entities.push_back(woodSphere);*/
-
 	GameEntity* bronzeSpherePBR = new GameEntity(sphereMesh, bronzeMatPBR);
 	bronzeSpherePBR->GetTransform()->SetPosition(0, 0, 0);
 	entities.push_back(bronzeSpherePBR);
-
-	/*GameEntity* cube = new GameEntity(cubeMesh, scratchedMatPBR);
-	cube->GetTransform()->SetScale(6, 30, 6);
-	cube->GetTransform()->SetPosition(0, 12.5f, 0);
-	entities.push_back(cube);*/
 
 	SimplePixelShader* terrainPS = LoadShader(SimplePixelShader, L"TerrainPS.cso");
 	SimpleVertexShader* terrainVS = LoadShader(SimpleVertexShader, L"TerrainVS.cso");
@@ -784,6 +378,338 @@ void Game::LoadAssetsAndCreateEntities()
 		lightPS,
 		pixelShaderPBR
 	);
+}
+
+void Game::InitializePhysX()
+{
+	// PhysX
+	mFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, mDefaultAllocatorCallback, mDefaultErrorCallback);
+	if (!mFoundation) throw("PxCreateFoundation failed!");
+	mToleranceScale.length = 100;        // typical length of an object
+	mToleranceScale.speed = 981;         // typical speed of an object, gravity*1s is a reasonable choice
+	mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale, true, NULL);
+
+	mCooking = PxCreateCooking(PX_PHYSICS_VERSION, *mFoundation, PxCookingParams(mToleranceScale));
+	if (!mCooking) throw("PxCreateCooking failed!");
+
+	PxSceneDesc sceneDesc(mPhysics->getTolerancesScale());
+	sceneDesc.gravity = PxVec3(0.0f, -3.62f, 0.0f);
+	mDispatcher = PxDefaultCpuDispatcherCreate(2);
+	sceneDesc.cpuDispatcher = mDispatcher;
+	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+	sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVE_ACTORS;
+	mScene = mPhysics->createScene(sceneDesc);
+
+	mMaterial = mPhysics->createMaterial(3.0f, 3.0f, 0.6f);
+	PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, physx::PxPlane(0, 1.0f, 0, 2.5f), *mMaterial);
+	mScene->addActor(*groundPlane);
+}
+
+void Game::CreatePhysXActors()
+{
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 4, 6),
+			PxVec3(0, 25.5f, 0),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 30, 18),
+			PxVec3(-6, 12.5f, 12),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(12, 30, 6),
+			PxVec3(9, 12.5f, -6),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 26, 6),
+			PxVec3(18, 10.5f, -6),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(24, 26, 12),
+			PxVec3(9, 10.5, 3),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(4, 26, 12),
+			PxVec3(-1, 10.5, 15),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 26, 6),
+			PxVec3(2, 10.5, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(8, 22, 6),
+			PxVec3(5, 8.5, 12),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(10, 20, 6),
+			PxVec3(8, 7.5, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(8, 18, 6),
+			PxVec3(17, 6.5, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 18, 6),
+			PxVec3(18, 6.5, 12),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(4, 16, 6),
+			PxVec3(23, 5.5, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 14, 6),
+			PxVec3(28, 4.5, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 12, 6),
+			PxVec3(28, 3.5, 24),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(4, 4, 6),
+			PxVec3(5, 25.5f, 0),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(4, 4, 6),
+			PxVec3(0, 25.5f, 5),
+			-1.575f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 4, 6),
+			PxVec3(18, 25.5f, -6),
+			-1.575f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 8, 6),
+			PxVec3(18, 19.5f, 12),
+			-1.575f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(4, 4, 6),
+			PxVec3(3, 21.5f, 12),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 4),
+			PxVec3(7, 18.5f, 16),
+			-1.575f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(14, 16.5f, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(22, 14.5f, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(26, 12.5f, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(28, 10.5f, 22),
+			-1.575f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(28, 10.5f, 26),
+			1.575f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(30, 10.5f, 24),
+			3.15f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(26, 10.5f, 24),
+			0.0f));
+
+	for (int i = 0; i < levelBlocks.size(); i++) {
+		mScene->addActor(*levelBlocks[i]->GetBody());
+		entities.push_back(levelBlocks[i]->GetEntity());
+	}
+
+	marble = new Marble(mPhysics, mScene, mMaterial, entities[0]);
 }
 
 
