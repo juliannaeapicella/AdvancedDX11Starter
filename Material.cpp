@@ -7,22 +7,26 @@ Material::Material(
 	SimplePixelShader* ps,
 	DirectX::XMFLOAT4 color,
 	float shininess,
+	bool isRefractive,
 	DirectX::XMFLOAT2 uvScale,
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> albedo,
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> normals,
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> roughness,
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> metal,
-	Microsoft::WRL::ComPtr<ID3D11SamplerState> sampler)
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> sampler, 
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> clampSampler)
 {
 	this->vs = vs;
 	this->ps = ps;
 	this->color = color;
 	this->shininess = shininess;
+	this->isRefractive = isRefractive;
 	this->albedoSRV = albedo;
 	this->normalSRV = normals;
 	this->roughnessSRV = roughness;
 	this->metalSRV = metal;
 	this->sampler = sampler;
+	this->clampSampler = clampSampler;
 	this->uvScale = uvScale;
 }
 
@@ -58,6 +62,7 @@ void Material::PrepareMaterial(Transform* transform, Camera* cam)
 
 	// Set sampler
 	ps->SetSamplerState("BasicSampler", sampler);
+	ps->SetSamplerState("ClampSampler", clampSampler);
 }
 
 void Material::SetPerMaterialDataAndResources(bool copyToGPUNow)
@@ -81,4 +86,5 @@ void Material::SetPerMaterialDataAndResources(bool copyToGPUNow)
 
 	// Set sampler
 	ps->SetSamplerState("BasicSampler", sampler);
+	ps->SetSamplerState("ClampSampler", clampSampler);
 }

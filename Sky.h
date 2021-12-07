@@ -16,6 +16,10 @@ public:
 		Mesh* mesh, 
 		SimpleVertexShader* skyVS,
 		SimplePixelShader* skyPS,
+		SimpleVertexShader* fullscreenVS,
+		SimplePixelShader* irradianceMapPS,
+		SimplePixelShader* specularConvolutionPS,
+		SimplePixelShader* lookUpTablePS,
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerOptions, 	
 		Microsoft::WRL::ComPtr<ID3D11Device> device,
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
@@ -32,6 +36,10 @@ public:
 		Mesh* mesh,
 		SimpleVertexShader* skyVS,
 		SimplePixelShader* skyPS,
+		SimpleVertexShader* fullscreenVS,
+		SimplePixelShader* irradianceMapPS,
+		SimplePixelShader* specularConvolutionPS,
+		SimplePixelShader* lookUpTablePS,
 		Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerOptions,
 		Microsoft::WRL::ComPtr<ID3D11Device> device,
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context
@@ -40,6 +48,14 @@ public:
 	~Sky();
 
 	void Draw(Camera* camera);
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetSkySRV();
+
+	// IBL
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetIrradianceMap();
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetConvolvedSpecularMap();
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetBRDFLookUpTexture();
+	int GetMipLevels();
 
 private:
 
@@ -67,5 +83,20 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerOptions;
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
 	Microsoft::WRL::ComPtr<ID3D11Device> device;
+
+	// IBL
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> irradianceMap;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> convolvedSpecularMap;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> brdfLookUpMap;
+
+	int totalSpecIBLMipLevels;
+
+	const int specIBLMipLevelsToSkip = 3;
+	const int IBLCubeSize = 512;
+	const int IBLLookupSize = 512;
+
+	void IBLCreateIrradianceMap(SimpleVertexShader* fullscreenVS, SimplePixelShader* irradianceMapPS);
+	void IBLCreateConvolvedSpecularMap(SimpleVertexShader* fullscreenVS, SimplePixelShader* specularConvolutionPS);
+	void IBLCreateBRDFLookUpTexture(SimpleVertexShader* fullscreenVS, SimplePixelShader* lookUpTablePS);
 };
 

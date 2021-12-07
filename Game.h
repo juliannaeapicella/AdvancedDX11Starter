@@ -15,7 +15,7 @@
 #include "Marble.h"
 #include "TerrainEntity.h"
 #include "CollisionMesh.h"
-
+#include "Emitter.h"
 #include <PxPhysics.h>
 #include <PxPhysicsAPI.h>
 
@@ -53,6 +53,7 @@ private:
 	std::vector<GameEntity*> entitiesRandom;
 	std::vector<GameEntity*> entitiesLineup;
 	std::vector<GameEntity*> entitiesGradient;
+	std::vector<Emitter*> emitters;
 	SimplePixelShader* pixelShader;
 	SimplePixelShader* pixelShaderPBR;
 	std::vector<ISimpleShader*> shaders;
@@ -78,7 +79,8 @@ private:
 
 	// Texture related resources
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerOptions;
-
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> clampSampler;
+	
 	// Skybox
 	Sky* sky;
 
@@ -109,6 +111,10 @@ private:
 	void GenerateLightsHeader(int i);
 	void GenerateCameraHeader();
 	void GenerateMaterialsHeader(int i, const char* textureTitles[]);
+	void GenerateSkyHeader();
+	void GenerateEmitterHeader(int i);
+	void GenerateMRTHeader();
+
 	std::string ConcatStringAndInt(std::string str, int i);
 	std::string ConcatStringAndFloat(std::string str, float f);
 
