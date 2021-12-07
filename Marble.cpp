@@ -59,11 +59,11 @@ void Marble::Move(Input& input, float dt, DirectX::XMFLOAT2 forward, DirectX::XM
 		);
 	}
 
-	if ((velocity.x >= 2 && force.x > 0) || (velocity.x <= -2 && force.x < 0))
+	if ((velocity.x >= 4 && force.x > 0) || (velocity.x <= -4 && force.x < 0))
 	{
 		force.x = 0;
 	}
-	if ((velocity.z >= 2 && force.z > 0) || (velocity.z <= -2 && force.z < 0)) {
+	if ((velocity.z >= 4 && force.z > 0) || (velocity.z <= -4 && force.z < 0)) {
 		force.z = 0;
 	}
 
@@ -81,6 +81,16 @@ void Marble::UpdateEntity()
 
 	entity->GetTransform()->SetPosition(pos.x, pos.y, pos.z);
 	entity->GetTransform()->SetRotationQuat(rot.x, rot.y, rot.z, rot.w);
+}
+
+void Marble::ResetPosition()
+{
+	if (body->getGlobalPose().p.y < 5) {
+		body->clearForce();
+		body->setLinearVelocity(PxVec3(0, 0, 0));
+		body->setAngularVelocity(PxVec3(0, 0, 0));
+		body->setGlobalPose(PxTransform(PxVec3(0, 35, 0)));
+	}
 }
 
 GameEntity* Marble::GetEntity()

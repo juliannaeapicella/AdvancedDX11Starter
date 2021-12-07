@@ -178,7 +178,7 @@
     </ClInclude>
     <ClInclude Include="CollisionMesh.h">
       <Filter>Header Files</Filter>
-    </ClCompile>
+    </ClInclude>
     <ClInclude Include="Emitter.h">
       <Filter>Header Files</Filter>
     </ClInclude>

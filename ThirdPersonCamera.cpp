@@ -76,10 +76,11 @@ void ThirdPersonCamera::Update(float dt)
 	Input& input = Input::GetInstance();
 
 	// Movement
+	XMFLOAT3 currentRotation = pivot->GetPitchYawRoll();
 	if (input.KeyDown(VK_RIGHT)) { pivot->Rotate(0, speed, 0); }
 	if (input.KeyDown(VK_LEFT)) { pivot->Rotate(0, -speed, 0); }
-	if (input.KeyDown(VK_UP)) { pivot->Rotate(speed, 0, 0); }
-	if (input.KeyDown(VK_DOWN)) { pivot->Rotate(-speed, 0, 0); }
+	if (input.KeyDown(VK_UP) && currentRotation.x < 1.0f) { pivot->Rotate(speed, 0, 0); }
+	if (input.KeyDown(VK_DOWN) && currentRotation.x > 0.0f) { pivot->Rotate(-speed, 0, 0); }
 
 	XMFLOAT3 entityPos = entity->GetTransform()->GetPosition();
 	pivot->SetPosition(entityPos.x, entityPos.y, entityPos.z);

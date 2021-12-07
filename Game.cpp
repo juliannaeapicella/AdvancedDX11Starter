@@ -199,72 +199,32 @@ void Game::LoadAssetsAndCreateEntities()
 	meshes.push_back(rampMesh);
 	
 	// Declare the textures we'll need
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobbleA,  cobbleN,  cobbleR,  cobbleM;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> floorA,  floorN,  floorR,  floorM;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> paintA,  paintN,  paintR,  paintM;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> scratchedA,  scratchedN,  scratchedR,  scratchedM;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeA,  bronzeN,  bronzeR,  bronzeM;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeN;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> roughA,  roughN,  roughR,  roughM;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> woodA,  woodN,  woodR,  woodM;
-
-	// solid textures
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> solidA;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> solidN;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> solidM, solidNonM;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> solidR1, solidR2, solidR3;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> metalA, metalR;
 
 	// Load the textures using our succinct LoadTexture() macro
-	LoadTexture(L"../../Assets/Textures/cobblestone_albedo.png", cobbleA);
-	LoadTexture(L"../../Assets/Textures/cobblestone_normals.png", cobbleN);
-	LoadTexture(L"../../Assets/Textures/cobblestone_roughness.png", cobbleR);
-	LoadTexture(L"../../Assets/Textures/cobblestone_metal.png", cobbleM);
 
 	LoadTexture(L"../../Assets/Textures/floor_albedo.png", floorA);
 	LoadTexture(L"../../Assets/Textures/floor_normals.png", floorN);
 	LoadTexture(L"../../Assets/Textures/floor_roughness.png", floorR);
 	LoadTexture(L"../../Assets/Textures/floor_metal.png", floorM);
 	
-	LoadTexture(L"../../Assets/Textures/paint_albedo.png", paintA);
-	LoadTexture(L"../../Assets/Textures/paint_normals.png", paintN);
-	LoadTexture(L"../../Assets/Textures/paint_roughness.png", paintR);
-	LoadTexture(L"../../Assets/Textures/paint_metal.png", paintM);
-	
-	LoadTexture(L"../../Assets/Textures/scratched_albedo.png", scratchedA);
-	LoadTexture(L"../../Assets/Textures/scratched_normals.png", scratchedN);
-	LoadTexture(L"../../Assets/Textures/scratched_roughness.png", scratchedR);
-	LoadTexture(L"../../Assets/Textures/scratched_metal.png", scratchedM);
-	
-	LoadTexture(L"../../Assets/Textures/bronze_albedo.png", bronzeA);
 	LoadTexture(L"../../Assets/Textures/bronze_normals.png", bronzeN);
-	LoadTexture(L"../../Assets/Textures/bronze_roughness.png", bronzeR);
-	LoadTexture(L"../../Assets/Textures/bronze_metal.png", bronzeM);
 	
 	LoadTexture(L"../../Assets/Textures/rough_albedo.png", roughA);
 	LoadTexture(L"../../Assets/Textures/rough_normals.png", roughN);
 	LoadTexture(L"../../Assets/Textures/rough_roughness.png", roughR);
 	LoadTexture(L"../../Assets/Textures/rough_metal.png", roughM);
-	
-	LoadTexture(L"../../Assets/Textures/wood_albedo.png", woodA);
-	LoadTexture(L"../../Assets/Textures/wood_normals.png", woodN);
-	LoadTexture(L"../../Assets/Textures/wood_roughness.png", woodR);
-	LoadTexture(L"../../Assets/Textures/wood_metal.png", woodM);
 
-	LoadTexture(L"../../Assets/Textures/white_albedo.png", solidA);
-	LoadTexture(L"../../Assets/Textures/solid_normal.png", solidN);
-	LoadTexture(L"../../Assets/Textures/solid_metal.png", solidM);
-	LoadTexture(L"../../Assets/Textures/solid_nonmetal.png", solidNonM);
-	LoadTexture(L"../../Assets/Textures/solid_rough1.png", solidR1);
-	LoadTexture(L"../../Assets/Textures/solid_rough2.png", solidR2);
-	LoadTexture(L"../../Assets/Textures/solid_rough3.png", solidR3);
+	LoadTexture(L"../../Assets/Textures/worn-shiny-metal-albedo.png", metalA);
+	LoadTexture(L"../../Assets/Textures/worn-shiny-metal-Roughness.png", metalR);
 
-	textures.push_back(cobbleA); textures.push_back(cobbleN); textures.push_back(cobbleR); textures.push_back(cobbleM);
 	textures.push_back(floorA); textures.push_back(floorN); textures.push_back(floorR); textures.push_back(floorM);
-	textures.push_back(paintA); textures.push_back(paintN); textures.push_back(paintR); textures.push_back(paintM);
-	textures.push_back(scratchedA); textures.push_back(scratchedN); textures.push_back(scratchedR); textures.push_back(scratchedM);
-	textures.push_back(bronzeA); textures.push_back(bronzeN); textures.push_back(bronzeR); textures.push_back(bronzeM);
+	textures.push_back(bronzeN);
 	textures.push_back(roughA); textures.push_back(roughN); textures.push_back(roughR); textures.push_back(roughM);
-	textures.push_back(woodA); textures.push_back(woodN); textures.push_back(woodR); textures.push_back(woodM);
-	textures.push_back(solidA); textures.push_back(solidN); textures.push_back(solidM); textures.push_back(solidNonM); textures.push_back(solidR1); textures.push_back(solidR2); textures.push_back(solidR3);
+	textures.push_back(metalA); textures.push_back(metalR); 
 
 	// Describe and create our sampler state
 	D3D11_SAMPLER_DESC sampDesc = {};
@@ -285,25 +245,14 @@ void Game::LoadAssetsAndCreateEntities()
 	clampSampDesc.MaxLOD = D3D11_FLOAT32_MAX;
 	device->CreateSamplerState(&clampSampDesc, clampSampler.GetAddressOf());
 
-
-	// Create the sky using a DDS cube map
-	/*sky = new Sky(
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\SunnyCubeMap.dds").c_str(),
-		cubeMesh,
-		skyVS,
-		skyPS,
-		samplerOptions,
-		device,
-		context);*/
-
 	// Create the sky using 6 images
 	sky = new Sky(
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Clouds Pink\\right.png").c_str(),
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Clouds Pink\\left.png").c_str(),
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Clouds Pink\\up.png").c_str(),
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Clouds Pink\\down.png").c_str(),
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Clouds Pink\\front.png").c_str(),
-		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Clouds Pink\\back.png").c_str(),
+		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Cold Sunset\\right.png").c_str(),
+		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Cold Sunset\\left.png").c_str(),
+		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Cold Sunset\\up.png").c_str(),
+		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Cold Sunset\\down.png").c_str(),
+		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Cold Sunset\\front.png").c_str(),
+		GetFullPathTo_Wide(L"..\\..\\Assets\\Skies\\Cold Sunset\\back.png").c_str(),
 		cubeMesh,
 		skyVS,
 		skyPS,
@@ -319,57 +268,18 @@ void Game::LoadAssetsAndCreateEntities()
 	delete specularConvolutionPS;
 	delete lookUpTablePS;
 
-	// Create basic materials
-	Material* cobbleMat2x = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), cobbleA, cobbleN, cobbleR, cobbleM, samplerOptions, clampSampler);
-	Material* floorMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), floorA, floorN, floorR, floorM, samplerOptions, clampSampler);
-	Material* paintMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), paintA, paintN, paintR, paintM, samplerOptions, clampSampler);
-	Material* scratchedMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), scratchedA, scratchedN, scratchedR, scratchedM, samplerOptions, clampSampler);
-	Material* bronzeMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), bronzeA, bronzeN, bronzeR, bronzeM, samplerOptions, clampSampler);
-	Material* roughMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), roughA, roughN, roughR, roughM, samplerOptions, clampSampler);
-	Material* woodMat = new Material(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), woodA, woodN, woodR, woodM, samplerOptions, clampSampler);
-
-	materials.push_back(cobbleMat2x);
-	materials.push_back(floorMat);
-	materials.push_back(paintMat);
-	materials.push_back(scratchedMat);
-	materials.push_back(bronzeMat);
-	materials.push_back(roughMat);
-	materials.push_back(woodMat);
-
 	// Create PBR materials
-	Material* cobbleMat2xPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), cobbleA, cobbleN, cobbleR, cobbleM, samplerOptions, clampSampler);
 	Material* floorMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), floorA, floorN, floorR, floorM, samplerOptions, clampSampler);
-	Material* paintMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), paintA, paintN, paintR, paintM, samplerOptions, clampSampler);
-	Material* scratchedMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), scratchedA, scratchedN, scratchedR, scratchedM, samplerOptions, clampSampler);
-	Material* bronzeMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, true, XMFLOAT2(2, 2), bronzeA, bronzeN, bronzeR, bronzeM, samplerOptions, clampSampler);
 	Material* roughMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), roughA, roughN, roughR, roughM, samplerOptions, clampSampler);
-	Material* woodMatPBR = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f , false, XMFLOAT2(2, 2), woodA, woodN, woodR, woodM, samplerOptions, clampSampler);
 
-	materials.push_back(cobbleMat2xPBR);
 	materials.push_back(floorMatPBR);
-	materials.push_back(paintMatPBR);
-	materials.push_back(scratchedMatPBR);
-	materials.push_back(bronzeMatPBR);
 	materials.push_back(roughMatPBR);
-	materials.push_back(woodMatPBR);
 
-	Material* solidMetalMaterialR1 = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), solidA, solidN, solidM, solidR1, samplerOptions, clampSampler);
-	Material* solidMetalMaterialR2 = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), solidA, solidN, solidM, solidR2, samplerOptions, clampSampler);
-	Material* solidMetalMaterialR3 = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), solidA, solidN, solidM, solidR3, samplerOptions, clampSampler);
-	Material* solidMaterialR1 = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), solidA, solidN, solidNonM, solidR1, samplerOptions, clampSampler);
-	Material* solidMaterialR2 = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), solidA, solidN, solidNonM, solidR2, samplerOptions, clampSampler);
-	Material* solidMaterialR3 = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), solidA, solidN, solidNonM, solidR3, samplerOptions, clampSampler);
-
-	materials.push_back(solidMetalMaterialR1);
-	materials.push_back(solidMetalMaterialR2);
-	materials.push_back(solidMetalMaterialR3);
-	materials.push_back(solidMaterialR1);
-	materials.push_back(solidMaterialR2);
-	materials.push_back(solidMaterialR3);
+	Material* marbleMat = new Material(vertexShader, pixelShaderPBR, XMFLOAT4(1, 1, 1, 1), 256.0f, false, XMFLOAT2(2, 2), metalA, bronzeN, metalR, roughM, samplerOptions, clampSampler);
+	materials.push_back(marbleMat);
   
-  GameEntity* bronzeSpherePBR = new GameEntity(sphereMesh, bronzeMatPBR);
-	bronzeSpherePBR->GetTransform()->SetPosition(0, 0, 0);
-	entities.push_back(bronzeSpherePBR);
+	GameEntity* marbleEntity = new GameEntity(sphereMesh, marbleMat);
+	entities.push_back(marbleEntity);
 
 	SimplePixelShader* terrainPS = LoadShader(SimplePixelShader, L"TerrainPS.cso");
 	SimpleVertexShader* terrainVS = LoadShader(SimpleVertexShader, L"TerrainVS.cso");
@@ -415,128 +325,32 @@ void Game::LoadAssetsAndCreateEntities()
 		samplerOptions
 	);
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture1;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture2;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture3;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture4;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture5;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture;
 
 	// Load the textures using our succinct LoadTexture() macro
-	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/star_06.png", particleTexture1);
-	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/symbol_01.png", particleTexture2);
-	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/symbol_02.png", particleTexture3);
-	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/smoke_07.png", particleTexture4);
-	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/star_04.png", particleTexture5);
+	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/symbol_02.png", particleTexture);
 
 	// Set up particle emitters
-	/*Emitter* emitter1 = new Emitter(
+	Emitter* emitter = new Emitter(
 		100,
-		5,
+		20,
 		2.0f,
-		EM_SPHERE,
-		device,
-		context,
-		particleVS,
-		particlePS,
-		particleTexture1);
-
-	emitter1->GetTransform()->SetScale(2.5f, 2.5f, 2.5f);
-	emitter1->SetVelocityMinMaxX(0.0f, 0.0f);
-	emitter1->SetVelocityMinMaxY(0.0f, 0.0f);
-	emitter1->SetVelocityMinMaxZ(0.0f, 0.0f);
-	emitter1->SetSizeModifier(-1);
-	emitter1->SetAlphaModifier(1);
-
-	emitters.push_back(emitter1);
-
-	Emitter* emitter2 = new Emitter(
-		100,
-		10,
-		7.0f,
 		EM_POINT,
 		device,
 		context,
 		particleVS,
 		particlePS,
-		particleTexture2);
+		particleTexture);
 
-	emitter2->GetTransform()->SetPosition(3.0f, 1.0f, 0.0f);
-	emitter2->SetParticleSize(XMFLOAT2(0.3f, 0.3f));
-	emitter2->SetColorTint(XMFLOAT4(1.0f, 0.4f, 1.0f, 1.0f));
-	emitter2->SetVelocityMinMaxX(-1.5f, -1.0f);
-	emitter2->SetVelocityMinMaxY(1.0f, 1.5f);
-	emitter2->SetVelocityMinMaxZ(-0.1f, 0.1f);
-	emitter2->SetAcceleration(XMFLOAT3(0.0f, -0.3f, 0.0f));
-	emitter2->SetAlphaModifier(1);
+	emitter->SetParticleSize(XMFLOAT2(0.2f, 0.2f));
+	emitter->SetColorTint(XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f));
+	emitter->SetVelocityMinMaxX(-0.2f, 0.2f);
+	emitter->SetVelocityMinMaxY(0.5f, 1.5f);
+	emitter->SetVelocityMinMaxZ(-0.2f, 0.2f);
+	emitter->SetAcceleration(XMFLOAT3(0, -0.1f, 0));
+	emitter->GetTransform()->SetPosition(28, 10, 24);
 
-	emitters.push_back(emitter2);
-
-	Emitter* emitter3 = new Emitter(
-		100,
-		10,
-		7.0f,
-		EM_POINT,
-		device,
-		context,
-		particleVS,
-		particlePS,
-		particleTexture3);
-
-	emitter3->GetTransform()->SetPosition(-3.0f, 1.0f, 0.0f);
-	emitter3->SetParticleSize(XMFLOAT2(0.3f, 0.3f));
-	emitter3->SetColorTint(XMFLOAT4(1.0f, 1.0f, 0.2f, 1.0f));
-	emitter3->SetVelocityMinMaxX(1.0f, 1.5f);
-	emitter3->SetVelocityMinMaxY(1.0f, 1.5f);
-	emitter3->SetVelocityMinMaxZ(-0.1f, 0.1f);
-	emitter3->SetAcceleration(XMFLOAT3(0.0f, -0.3f, 0.0f));
-	emitter3->SetAlphaModifier(1);
-
-	emitters.push_back(emitter3);
-
-	Emitter* emitter4 = new Emitter(
-		100,
-		5,
-		20.0f,
-		EM_CUBE,
-		device,
-		context,
-		particleVS,
-		particlePS,
-		particleTexture4);
-
-	emitter4->GetTransform()->SetPosition(0.0f, -3.0f, 0.0f);
-	emitter4->GetTransform()->SetScale(15.0f, 0.1f, 10.0f);
-	emitter4->SetParticleSize(XMFLOAT2(1.0f, 1.0f));
-	emitter4->SetColorTint(XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f));
-	emitter4->SetVelocityMinMaxX(-0.1, 0.1);
-	emitter4->SetVelocityMinMaxY(0.0f, 0.0f);
-	emitter4->SetVelocityMinMaxZ(0.0f, 0.0f);
-	emitter4->SetSizeModifier(1);
-	emitter4->SetAlphaModifier(1);
-
-	emitters.push_back(emitter4);
-
-	Emitter* emitter5 = new Emitter(
-		100,
-		15,
-		2.0f,
-		EM_CUBE,
-		device,
-		context,
-		particleVS,
-		particlePS,
-		particleTexture5);
-
-	emitter5->GetTransform()->SetScale(15.0f, 10.0f, 1.0f);
-	emitter5->SetParticleSize(XMFLOAT2(0.25f, 0.25f));
-	emitter5->SetColorTint(XMFLOAT4(0.5f, 0.5f, 1.0f, 1.0f));
-	emitter5->SetVelocityMinMaxX(0.0f, 0.0f);
-	emitter5->SetVelocityMinMaxY(0.0f, 0.0f);
-	emitter5->SetVelocityMinMaxZ(0.0f, 0.0f);
-	emitter5->SetSizeModifier(-1);
-	emitter5->SetAlphaModifier(-1);
-
-	emitters.push_back(emitter5);*/
+	emitters.push_back(emitter);
 
 	// Save assets needed for drawing point lights
 	// (Since these are just copies of the pointers,
@@ -601,7 +415,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -612,7 +426,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -623,7 +437,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -634,7 +448,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -645,7 +459,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -656,7 +470,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -667,7 +481,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -678,7 +492,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -689,7 +503,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -700,7 +514,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -711,7 +525,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -722,7 +536,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -733,7 +547,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -744,7 +558,7 @@ void Game::CreatePhysXActors()
 	levelBlocks.push_back(
 		new CollisionMesh(meshes[1],
 			12,
-			materials[1],
+			materials[0],
 			mMaterial,
 			mCooking,
 			mPhysics,
@@ -938,18 +752,18 @@ void Game::GenerateLights()
 	lights.push_back(dir3);
 
 	// Create the rest of the lights
-	/*while (lights.size() < lightCount)
+	while (lights.size() < lightCount)
 	{
 		Light point = {};
 		point.Type = LIGHT_TYPE_POINT;
-		point.Position = XMFLOAT3(RandomRange(-10.0f, 10.0f), RandomRange(-5.0f, 5.0f), RandomRange(-10.0f, 10.0f));
+		point.Position = XMFLOAT3(RandomRange(-10.0f, 10.0f), RandomRange(25.0f, 35.0f), RandomRange(-10.0f, 10.0f));
 		point.Color = XMFLOAT3(RandomRange(0, 1), RandomRange(0, 1), RandomRange(0, 1));
 		point.Range = RandomRange(5.0f, 10.0f);
 		point.Intensity = RandomRange(0.1f, 3.0f);
 
 		// Add to the list
 		lights.push_back(point);
-	}*/
+	}
 
 }
 
@@ -991,10 +805,10 @@ void Game::Update(float deltaTime, float totalTime)
 
 	// Update the camera
 	thirdPCamera->Update(deltaTime);
-
-	// update emitters
-	/*for (auto& e : emitters)
-		e->Update(deltaTime, totalTime);*/
+	
+	// update emitter
+	for (auto& e : emitters)
+		e->Update(deltaTime, totalTime);
 
 	// Check individual input
 	if (input.KeyDown(VK_ESCAPE)) Quit();
@@ -1005,6 +819,8 @@ void Game::Update(float deltaTime, float totalTime)
 
 	mScene->simulate(1.0f/60.0f);
 	mScene->fetchResults(true); 
+
+	marble->ResetPosition();
 
 	marble->UpdateEntity();
 }
@@ -1082,29 +898,12 @@ void Game::UpdateSceneWindow()
 		// number of entities
 		ImGui::Text(ConcatStringAndInt("Number of Entities: ", entities.size()).c_str());
 
-		const char* meshTitles[] = { "Sphere", "Cube", "Terrain", "Ramp" };
+		const char* meshTitles[] = { "Sphere", "Cube", "Ramp", "Terrain" };
 
 		const char* materialTitles[] = {
-			"Cobblestone",
 			"Floor",
-			"Paint",
-			"Scratched",
-			"Bronze",
 			"Rough",
-			"Wood",
-			"Cobblestone - PBR",
-			"Floor - PBR",
-			"Paint - PBR",
-			"Scratched - PBR",
-			"Bronze - PBR",
-			"Rough - PBR",
-			"Wood - PBR",
-			"White, Non-Metal, Rough",
-			"White, Non-Metal, Less Rough",
-			"White, Non-Metal, Smooth",
-			"White, Metal, Rough",
-			"White, Metal, Less Rough",
-			"White, Metal, Smooth",
+			"Metal"
 		};
 
 		// specific entity headers
@@ -1132,14 +931,13 @@ void Game::UpdateSceneWindow()
 		ImGui::Text(ConcatStringAndInt("Number of Materials: ", materials.size()).c_str());
 
 		const char* textureTitles[] = {
-			"Cobblestone A", "Cobblestone N", "Cobblestone R", "Cobblestone M",
 			"Floor A", "Floor N", "Floor R", "Floor M",
-			"Paint A", "Paint N", "Paint R", "Paint M",
-			"Scratched A", "Scratched N", "Scratched R", "Scratched M",
-			"Bronze A", "Bronze N", "Bronze R", "Bronze M",
+			"Bronze N",
 			"Rough A", "Rough N", "Rough R", "Rough M",
-			"Wood A", "Wood N", "Wood R", "Wood M",
-			"Solid White A", "Solid White N", "Solid Non-Metal", "Solid Metal", "Rough", "Less Rough", "Smooth",
+			"Metal A", "Metal R",
+			"Valley Splat",
+			"Snow A", "Grass A", "Mountain A",
+			"Snow N", "Grass N", "Mountain N"
 		};
 
 		// select specific material headers

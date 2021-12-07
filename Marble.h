@@ -15,6 +15,7 @@ public:
 
 	void Move(Input& input, float dt, DirectX::XMFLOAT2 forward, DirectX::XMFLOAT2 right);
 	void UpdateEntity();
+	void ResetPosition();
 
 	GameEntity* GetEntity();
 private:

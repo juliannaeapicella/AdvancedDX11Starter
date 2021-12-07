@@ -25,8 +25,8 @@ TerrainEntity::TerrainEntity(
 		terrainNormals1SRV(terrainNormals1SRV),
 		terrainNormals2SRV(terrainNormals2SRV),
 		samplerOptions(samplerOptions) {
-	transform.SetPosition(0, -10, 0);
-	transform.SetScale(5, 3, 5);
+	transform.SetPosition(0, 0, 0);
+	transform.SetScale(10, 7, 10);
 }
 
 Mesh* TerrainEntity::GetMesh() { return mesh; }
