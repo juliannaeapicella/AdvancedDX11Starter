@@ -4,6 +4,7 @@
 #include "Mesh.h"
 #include "GameEntity.h"
 #include "Camera.h"
+#include "ThirdPersonCamera.h"
 #include "Renderer.h"
 #include "SimpleShader.h"
 #include "SpriteFont.h"
@@ -11,7 +12,12 @@
 #include "Lights.h"
 #include "Sky.h"
 #include "Input.h"
+#include "Marble.h"
+#include "TerrainEntity.h"
+#include "CollisionMesh.h"
 #include "Emitter.h"
+#include <PxPhysics.h>
+#include <PxPhysicsAPI.h>
 
 #include <DirectXMath.h>
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
@@ -51,8 +57,11 @@ private:
 	SimplePixelShader* pixelShader;
 	SimplePixelShader* pixelShaderPBR;
 	std::vector<ISimpleShader*> shaders;
+	ThirdPersonCamera* thirdPCamera;
 	Camera* camera;
 	Renderer* renderer;
+
+	Marble* marble;
 
 	// Lights
 	std::vector<Light> lights;
@@ -74,6 +83,22 @@ private:
 	
 	// Skybox
 	Sky* sky;
+
+	// Terrain resources
+	TerrainEntity* terrain;
+
+	// Blend (or "splat") map
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainBlendMapSRV;
+
+	// Textures
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainTexture0SRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainTexture1SRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainTexture2SRV;
+
+	// Normal maps
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainNormals0SRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainNormals1SRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> terrainNormals2SRV;
 
 	float interval;
 
@@ -98,6 +123,22 @@ private:
 
 	// Initialization helper method
 	void LoadAssetsAndCreateEntities();
+	void InitializePhysX();
+	void CreatePhysXActors();
+
+	// PhysX stuff
+	physx::PxDefaultAllocator mDefaultAllocatorCallback;
+	physx::PxDefaultErrorCallback mDefaultErrorCallback;
+	physx::PxDefaultCpuDispatcher* mDispatcher;
+	physx::PxTolerancesScale mToleranceScale;
+	physx::PxFoundation* mFoundation;
+	physx::PxCooking* mCooking;
+	physx::PxPhysics* mPhysics;
+
+	physx::PxScene* mScene;
+	physx::PxMaterial* mMaterial;
+
+	std::vector<CollisionMesh*> levelBlocks;
 };
 
 /// <summary>

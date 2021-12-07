@@ -15,6 +15,7 @@ public:
 
 	void SetPosition(float x, float y, float z);
 	void SetRotation(float p, float y, float r);
+	void SetRotationQuat(float x, float y, float z, float w);
 	void SetScale(float x, float y, float z);
 
 	DirectX::XMFLOAT3 GetPosition();
@@ -27,6 +28,8 @@ public:
 	void AddChild(Transform* child);
 	void RemoveChild(Transform* child);
 	void SetParent(Transform* newParent);
+
+	void SetTransformsFromMatrix(DirectX::XMFLOAT4X4 worldMatrix);
 
 	Transform* GetParent();
 	Transform* GetChild(unsigned int index);
@@ -52,7 +55,6 @@ private:
 
 	void MarkChildTransformsDirty();
 
-	void SetTransformsFromMatrix(DirectX::XMFLOAT4X4 worldMatrix);
 	DirectX::XMFLOAT3 QuatToEuler(DirectX::XMFLOAT4 quat);
 };
 

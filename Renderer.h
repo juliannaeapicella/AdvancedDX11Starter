@@ -2,6 +2,7 @@
 
 #include "DXCore.h"
 #include "GameEntity.h"
+#include "TerrainEntity.h"
 #include "Camera.h"
 #include "Lights.h"
 #include "Emitter.h"
@@ -35,6 +36,7 @@ public:
 		unsigned int width,
 		unsigned int height,
 		Sky* sky,
+		TerrainEntity* terrain,
 		const std::vector<GameEntity*>& entities,
 		const std::vector<Light>& lights,
 		const std::vector<Emitter*>& emitters,
@@ -95,6 +97,7 @@ private:
 	unsigned int windowHeight;
 
 	Sky* sky;
+	TerrainEntity* terrain;
 	const std::vector<GameEntity*>& entities;
 	const std::vector<Light>& lights;
 	const std::vector<Emitter*>& emitters;

@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="packages\vcpkg-export-20211006-203535.1.0.0\build\native\vcpkg-export-20211006-203535.props" Condition="Exists('packages\vcpkg-export-20211006-203535.1.0.0\build\native\vcpkg-export-20211006-203535.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -77,6 +78,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\julia\Documents\GitHub\AdvancedDX11Starter\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -91,6 +93,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\julia\Documents\GitHub\AdvancedDX11Starter\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -107,6 +110,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\julia\Documents\GitHub\AdvancedDX11Starter\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MBCS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -125,6 +129,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\julia\Documents\GitHub\AdvancedDX11Starter\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MBCS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -136,6 +141,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CollisionMesh.cpp" />
     <ClCompile Include="DXCore.cpp" />
     <ClCompile Include="Emitter.cpp" />
     <ClCompile Include="Game.cpp" />
@@ -149,15 +155,20 @@
     <ClCompile Include="ImGUI\imgui_widgets.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Marble.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SimpleShader.cpp" />
     <ClCompile Include="Sky.cpp" />
+    <ClCompile Include="TerrainEntity.cpp" />
+    <ClCompile Include="TerrainMesh.cpp" />
+    <ClCompile Include="ThirdPersonCamera.cpp" />
     <ClCompile Include="Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="CollisionMesh.h" />
     <ClInclude Include="DXCore.h" />
     <ClInclude Include="Emitter.h" />
     <ClInclude Include="Game.h" />
@@ -172,11 +183,15 @@
     <ClInclude Include="ImGUI\imstb_truetype.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="Lights.h" />
+    <ClInclude Include="Marble.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="SimpleShader.h" />
     <ClInclude Include="Sky.h" />
+    <ClInclude Include="TerrainEntity.h" />
+    <ClInclude Include="TerrainMesh.h" />
+    <ClInclude Include="ThirdPersonCamera.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
@@ -315,6 +330,22 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="TerrainPS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="TerrainVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="VertexShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>
@@ -330,6 +361,7 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\Microsoft.XAudio2.Redist.1.2.0\build\native\Microsoft.XAudio2.Redist.targets" Condition="Exists('packages\Microsoft.XAudio2.Redist.1.2.0\build\native\Microsoft.XAudio2.Redist.targets')" />
     <Import Project="packages\directxtk_desktop_2017.2020.2.24.4\build\native\directxtk_desktop_2017.targets" Condition="Exists('packages\directxtk_desktop_2017.2020.2.24.4\build\native\directxtk_desktop_2017.targets')" />
+    <Import Project="packages\vcpkg-export-20211006-203535.1.0.0\build\native\vcpkg-export-20211006-203535.targets" Condition="Exists('packages\vcpkg-export-20211006-203535.1.0.0\build\native\vcpkg-export-20211006-203535.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -337,5 +369,7 @@
     </PropertyGroup>
     <Error Condition="!Exists('packages\Microsoft.XAudio2.Redist.1.2.0\build\native\Microsoft.XAudio2.Redist.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.XAudio2.Redist.1.2.0\build\native\Microsoft.XAudio2.Redist.targets'))" />
     <Error Condition="!Exists('packages\directxtk_desktop_2017.2020.2.24.4\build\native\directxtk_desktop_2017.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\directxtk_desktop_2017.2020.2.24.4\build\native\directxtk_desktop_2017.targets'))" />
+    <Error Condition="!Exists('packages\vcpkg-export-20211006-203535.1.0.0\build\native\vcpkg-export-20211006-203535.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\vcpkg-export-20211006-203535.1.0.0\build\native\vcpkg-export-20211006-203535.props'))" />
+    <Error Condition="!Exists('packages\vcpkg-export-20211006-203535.1.0.0\build\native\vcpkg-export-20211006-203535.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\vcpkg-export-20211006-203535.1.0.0\build\native\vcpkg-export-20211006-203535.targets'))" />
   </Target>
 </Project>

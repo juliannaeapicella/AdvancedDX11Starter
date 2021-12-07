@@ -1,10 +1,10 @@
-
 #include <stdlib.h>     // For seeding random and rand()
 #include <time.h>       // For grabbing time (to seed random)
 
 #include "Game.h"
 #include "Vertex.h"
 #include "Input.h"
+#include "TerrainMesh.h"
 
 #include "ImGUI/imgui.h"
 #include "WICTextureLoader.h"
@@ -14,9 +14,11 @@
 #include <d3dcompiler.h>
 #include "ImGUI/imgui_impl_win32.h"
 #include "ImGUI/imgui_impl_dx11.h"
+#include <iostream>
 
 // For the DirectX Math library
 using namespace DirectX;
+using namespace physx;
 
 // Helper macro for getting a float between min and max
 #define RandomRange(min, max) (float)rand() / RAND_MAX * (max - min) + min
@@ -73,14 +75,17 @@ Game::~Game()
 	for (auto& s : shaders) delete s; 
 	for (auto& m : materials) delete m;
 	for (auto& e : entities) delete e;
+	for (auto& b : levelBlocks) delete b;
 	for (auto& e : emitters) delete e;
 
 	// Delete any one-off objects
 	delete sky;
-	delete camera;
+	delete thirdPCamera;
 	delete renderer;
 	delete arial;
 	delete spriteBatch;
+	delete marble;
+	delete terrain;
 
 	// Delete singletons
 	delete& Input::GetInstance();
@@ -89,6 +94,12 @@ Game::~Game()
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
+
+	// PhysX
+	mPhysics->release();
+	mDispatcher->release();
+	mFoundation->release();
+	mCooking->release();
 }
 
 // --------------------------------------------------------
@@ -113,11 +124,9 @@ void Game::Init()
 	GenerateLights();
 
 	// Make our camera
-	camera = new Camera(
-		0, 0, -10,	// Position
-		3.0f,		// Move speed
-		1.0f,		// Mouse look
-		this->width / (float)this->height); // Aspect ratio
+	thirdPCamera = new ThirdPersonCamera(entities[0], this->width / (float)this->height);
+
+	camera = thirdPCamera->GetCamera();
 
 	interval = 0.005;
 
@@ -133,6 +142,10 @@ void Game::Init()
 	// Setup Platform/Renderer backends
 	ImGui_ImplWin32_Init(hWnd);
 	ImGui_ImplDX11_Init(device.Get(), context.Get());
+
+	// PhysX
+	InitializePhysX();
+	CreatePhysXActors();
 }
 
 
@@ -178,14 +191,12 @@ void Game::LoadAssetsAndCreateEntities()
 
 	// Make the meshes
 	Mesh* sphereMesh = new Mesh(GetFullPathTo("../../Assets/Models/sphere.obj").c_str(), device);
-	Mesh* helixMesh = new Mesh(GetFullPathTo("../../Assets/Models/helix.obj").c_str(), device);
 	Mesh* cubeMesh = new Mesh(GetFullPathTo("../../Assets/Models/cube.obj").c_str(), device);
-	Mesh* coneMesh = new Mesh(GetFullPathTo("../../Assets/Models/cone.obj").c_str(), device);
+	Mesh* rampMesh = new Mesh(GetFullPathTo("../../Assets/Models/Ramp.obj").c_str(), device);
 
 	meshes.push_back(sphereMesh);
-	meshes.push_back(helixMesh);
 	meshes.push_back(cubeMesh);
-	meshes.push_back(coneMesh);
+	meshes.push_back(rampMesh);
 	
 	// Declare the textures we'll need
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cobbleA,  cobbleN,  cobbleR,  cobbleM;
@@ -355,111 +366,54 @@ void Game::LoadAssetsAndCreateEntities()
 	materials.push_back(solidMaterialR1);
 	materials.push_back(solidMaterialR2);
 	materials.push_back(solidMaterialR3);
-
-	/*GameEntity* solidMetalSphereR1 = new GameEntity(sphereMesh, solidMetalMaterialR1);
-	solidMetalSphereR1->GetTransform()->SetScale(2, 2, 2);
-	solidMetalSphereR1->GetTransform()->SetPosition(-2, 1, 0);
-
-	GameEntity* solidMetalSphereR2 = new GameEntity(sphereMesh, bronzeMatPBR);
-	solidMetalSphereR2->GetTransform()->SetScale(2, 2, 2);
-	solidMetalSphereR2->GetTransform()->SetPosition(0, 0, 0);
-	
-	GameEntity* solidMetalSphereR3 = new GameEntity(sphereMesh, solidMetalMaterialR3);
-	solidMetalSphereR3->GetTransform()->SetScale(2, 2, 2);
-	solidMetalSphereR3->GetTransform()->SetPosition(2, 1, 0);
-
-	GameEntity* solidSphereR1 = new GameEntity(sphereMesh, solidMaterialR1);
-	solidSphereR1->GetTransform()->SetScale(2, 2, 2);
-	solidSphereR1->GetTransform()->SetPosition(-2, -1, 0);
-
-	GameEntity* solidSphereR2 = new GameEntity(sphereMesh, solidMaterialR2);
-	solidSphereR2->GetTransform()->SetScale(2, 2, 2);
-	solidSphereR2->GetTransform()->SetPosition(0, -1, 0);*/
-
-	GameEntity* solidSphereR3 = new GameEntity(sphereMesh, solidMaterialR2);
-	solidSphereR3->GetTransform()->SetScale(2, 2, 2);
-	solidSphereR3->GetTransform()->SetPosition(0, 0, 0);
-
-	/*entities.push_back(solidMetalSphereR1);
-	entities.push_back(solidMetalSphereR2);
-	entities.push_back(solidMetalSphereR3);
-	entities.push_back(solidSphereR1);
-	entities.push_back(solidSphereR2);*/
-	entities.push_back(solidSphereR3);
-
-	// === Create the PBR entities =====================================
-	/*GameEntity* cobSpherePBR = new GameEntity(sphereMesh, cobbleMat2xPBR);
-	cobSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	cobSpherePBR->GetTransform()->SetPosition(-6, 2, 0);
-
-	GameEntity* floorSpherePBR = new GameEntity(sphereMesh, floorMatPBR);
-	floorSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	floorSpherePBR->GetTransform()->SetPosition(-4, 2, 0);
-
-	GameEntity* paintSpherePBR = new GameEntity(sphereMesh, paintMatPBR);
-	paintSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	paintSpherePBR->GetTransform()->SetPosition(-2, 2, 0);
-
-	GameEntity* scratchSpherePBR = new GameEntity(sphereMesh, scratchedMatPBR);
-	scratchSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	scratchSpherePBR->GetTransform()->SetPosition(0, 2, 0);
-
-	GameEntity* bronzeSpherePBR = new GameEntity(sphereMesh, bronzeMatPBR);
-	bronzeSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	bronzeSpherePBR->GetTransform()->SetPosition(2, 2, 0);
-
-	GameEntity* roughSpherePBR = new GameEntity(sphereMesh, roughMatPBR);
-	roughSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	roughSpherePBR->GetTransform()->SetPosition(4, 2, 0);
-
-	GameEntity* woodSpherePBR = new GameEntity(sphereMesh, woodMatPBR);
-	woodSpherePBR->GetTransform()->SetScale(2, 2, 2);
-	woodSpherePBR->GetTransform()->SetPosition(6, 2, 0);
-
-	entities.push_back(cobSpherePBR);
-	entities.push_back(floorSpherePBR);
-	entities.push_back(paintSpherePBR);
-	entities.push_back(scratchSpherePBR);
+  
+  GameEntity* bronzeSpherePBR = new GameEntity(sphereMesh, bronzeMatPBR);
+	bronzeSpherePBR->GetTransform()->SetPosition(0, 0, 0);
 	entities.push_back(bronzeSpherePBR);
-	entities.push_back(roughSpherePBR);
-	entities.push_back(woodSpherePBR);*/
 
-	// Create the non-PBR entities ==============================
-	/*GameEntity* cobSphere = new GameEntity(sphereMesh, cobbleMat2x);
-	cobSphere->GetTransform()->SetScale(2, 2, 2);
-	cobSphere->GetTransform()->SetPosition(-6, -2, 0);
+	SimplePixelShader* terrainPS = LoadShader(SimplePixelShader, L"TerrainPS.cso");
+	SimpleVertexShader* terrainVS = LoadShader(SimpleVertexShader, L"TerrainVS.cso");
 
-	GameEntity* floorSphere = new GameEntity(sphereMesh, floorMat);
-	floorSphere->GetTransform()->SetScale(2, 2, 2);
-	floorSphere->GetTransform()->SetPosition(-4, -2, 0);
+	shaders.push_back(terrainPS);
+	shaders.push_back(terrainVS);
 
-	GameEntity* paintSphere = new GameEntity(sphereMesh, paintMat);
-	paintSphere->GetTransform()->SetScale(2, 2, 2);
-	paintSphere->GetTransform()->SetPosition(-2, -2, 0);
+	Mesh* terrainMesh = new TerrainMesh(
+		device,
+		GetFullPathTo("../../Assets/Textures/Terrain/valley.raw16").c_str(),
+		513,
+		513,
+		BitDepth_16,
+		5.0f,
+		0.05f,
+		1.0f);
 
-	GameEntity* scratchSphere = new GameEntity(sphereMesh, scratchedMat);
-	scratchSphere->GetTransform()->SetScale(2, 2, 2);
-	scratchSphere->GetTransform()->SetPosition(0, -2, 0);
+	meshes.push_back(terrainMesh);
 
-	GameEntity* bronzeSphere = new GameEntity(sphereMesh, bronzeMat);
-	bronzeSphere->GetTransform()->SetScale(2, 2, 2);
-	bronzeSphere->GetTransform()->SetPosition(2, -2, 0);
+	LoadTexture(L"../../Assets/Textures/Terrain/valley_splat.png", terrainBlendMapSRV);
+	LoadTexture(L"../../Assets/Textures/Terrain/snow.jpg", terrainTexture0SRV);
+	LoadTexture(L"../../Assets/Textures/Terrain/grass3.png", terrainTexture1SRV);
+	LoadTexture(L"../../Assets/Textures/Terrain/mountain3.png", terrainTexture2SRV);
+	LoadTexture(L"../../Assets/Textures/Terrain/snow_normals.jpg", terrainNormals0SRV);
+	LoadTexture(L"../../Assets/Textures/Terrain/grass3_normals.png", terrainNormals1SRV);
+	LoadTexture(L"../../Assets/Textures/Terrain/mountain3_normals.png", terrainNormals2SRV);
 
-	GameEntity* roughSphere = new GameEntity(sphereMesh, roughMat);
-	roughSphere->GetTransform()->SetScale(2, 2, 2);
-	roughSphere->GetTransform()->SetPosition(4, -2, 0);
+	textures.push_back(terrainBlendMapSRV); 
+	textures.push_back(terrainTexture0SRV); textures.push_back(terrainTexture1SRV); textures.push_back(terrainTexture2SRV);
+	textures.push_back(terrainNormals0SRV); textures.push_back(terrainNormals1SRV); textures.push_back(terrainNormals2SRV);
 
-	GameEntity* woodSphere = new GameEntity(sphereMesh, woodMat);
-	woodSphere->GetTransform()->SetScale(2, 2, 2);
-	woodSphere->GetTransform()->SetPosition(6, -2, 0);
-
-	entities.push_back(cobSphere);
-	entities.push_back(floorSphere);
-	entities.push_back(paintSphere);
-	entities.push_back(scratchSphere);
-	entities.push_back(bronzeSphere);
-	entities.push_back(roughSphere);
-	entities.push_back(woodSphere);*/
+	terrain = new TerrainEntity(
+		terrainMesh,
+		terrainPS,
+		terrainVS,
+		terrainBlendMapSRV,
+		terrainTexture0SRV,
+		terrainTexture1SRV,
+		terrainTexture2SRV,
+		terrainNormals0SRV,
+		terrainNormals1SRV,
+		terrainNormals2SRV,
+		samplerOptions
+	);
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture1;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleTexture2;
@@ -475,7 +429,7 @@ void Game::LoadAssetsAndCreateEntities()
 	LoadTexture(L"../../Assets/Particles/PNG (Transparent)/star_04.png", particleTexture5);
 
 	// Set up particle emitters
-	Emitter* emitter1 = new Emitter(
+	/*Emitter* emitter1 = new Emitter(
 		100,
 		5,
 		2.0f,
@@ -582,7 +536,7 @@ void Game::LoadAssetsAndCreateEntities()
 	emitter5->SetSizeModifier(-1);
 	emitter5->SetAlphaModifier(-1);
 
-	emitters.push_back(emitter5);
+	emitters.push_back(emitter5);*/
 
 	// Save assets needed for drawing point lights
 	// (Since these are just copies of the pointers,
@@ -601,6 +555,7 @@ void Game::LoadAssetsAndCreateEntities()
 		this->width,
 		this->height,
 		sky,
+		terrain,
 		entities,
 		lights,
 		emitters,
@@ -614,6 +569,338 @@ void Game::LoadAssetsAndCreateEntities()
 		simpleTexturePS,
 		refractionPS
 	);
+}
+
+void Game::InitializePhysX()
+{
+	// PhysX
+	mFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, mDefaultAllocatorCallback, mDefaultErrorCallback);
+	if (!mFoundation) throw("PxCreateFoundation failed!");
+	mToleranceScale.length = 100;        // typical length of an object
+	mToleranceScale.speed = 981;         // typical speed of an object, gravity*1s is a reasonable choice
+	mPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *mFoundation, mToleranceScale, true, NULL);
+
+	mCooking = PxCreateCooking(PX_PHYSICS_VERSION, *mFoundation, PxCookingParams(mToleranceScale));
+	if (!mCooking) throw("PxCreateCooking failed!");
+
+	PxSceneDesc sceneDesc(mPhysics->getTolerancesScale());
+	sceneDesc.gravity = PxVec3(0.0f, -3.62f, 0.0f);
+	mDispatcher = PxDefaultCpuDispatcherCreate(2);
+	sceneDesc.cpuDispatcher = mDispatcher;
+	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+	sceneDesc.flags |= PxSceneFlag::eENABLE_ACTIVE_ACTORS;
+	mScene = mPhysics->createScene(sceneDesc);
+
+	mMaterial = mPhysics->createMaterial(3.0f, 3.0f, 0.6f);
+	PxRigidStatic* groundPlane = PxCreatePlane(*mPhysics, physx::PxPlane(0, 1.0f, 0, 2.5f), *mMaterial);
+	mScene->addActor(*groundPlane);
+}
+
+void Game::CreatePhysXActors()
+{
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 4, 6),
+			PxVec3(0, 25.5f, 0),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 30, 18),
+			PxVec3(-6, 12.5f, 12),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(12, 30, 6),
+			PxVec3(9, 12.5f, -6),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 26, 6),
+			PxVec3(18, 10.5f, -6),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(24, 26, 12),
+			PxVec3(9, 10.5, 3),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(4, 26, 12),
+			PxVec3(-1, 10.5, 15),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 26, 6),
+			PxVec3(2, 10.5, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(8, 22, 6),
+			PxVec3(5, 8.5, 12),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(10, 20, 6),
+			PxVec3(8, 7.5, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(8, 18, 6),
+			PxVec3(17, 6.5, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 18, 6),
+			PxVec3(18, 6.5, 12),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(4, 16, 6),
+			PxVec3(23, 5.5, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 14, 6),
+			PxVec3(28, 4.5, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[1],
+			12,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 12, 6),
+			PxVec3(28, 3.5, 24),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(4, 4, 6),
+			PxVec3(5, 25.5f, 0),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(4, 4, 6),
+			PxVec3(0, 25.5f, 5),
+			-1.575f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 4, 6),
+			PxVec3(18, 25.5f, -6),
+			-1.575f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(6, 8, 6),
+			PxVec3(18, 19.5f, 12),
+			-1.575f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(4, 4, 6),
+			PxVec3(3, 21.5f, 12),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 4),
+			PxVec3(7, 18.5f, 16),
+			-1.575f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(14, 16.5f, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(22, 14.5f, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(26, 12.5f, 18),
+			0.0f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(28, 10.5f, 22),
+			-1.575f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(28, 10.5f, 26),
+			1.575f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(30, 10.5f, 24),
+			3.15f));
+
+	levelBlocks.push_back(
+		new CollisionMesh(meshes[2],
+			8,
+			materials[1],
+			mMaterial,
+			mCooking,
+			mPhysics,
+			PxVec3(2, 2, 6),
+			PxVec3(26, 10.5f, 24),
+			0.0f));
+
+	for (int i = 0; i < levelBlocks.size(); i++) {
+		mScene->addActor(*levelBlocks[i]->GetBody());
+		entities.push_back(levelBlocks[i]->GetEntity());
+	}
+
+	marble = new Marble(mPhysics, mScene, mMaterial, entities[0]);
 }
 
 
@@ -699,25 +986,27 @@ void Game::Update(float deltaTime, float totalTime)
 	// get input
 	Input& input = Input::GetInstance();
 
-	int yPos = entities[0]->GetTransform()->GetPosition().y;
-	if (yPos == 2 || yPos == -2) {
-		interval = -interval;
-	}
-
 	//update the GUI
 	UpdateGUI(deltaTime, input);
 
 	// Update the camera
-	camera->Update(deltaTime);
+	thirdPCamera->Update(deltaTime);
 
 	// update emitters
-	for (auto& e : emitters)
-		e->Update(deltaTime, totalTime);
+	/*for (auto& e : emitters)
+		e->Update(deltaTime, totalTime);*/
 
 	// Check individual input
 	if (input.KeyDown(VK_ESCAPE)) Quit();
 	if (input.KeyPress(VK_TAB)) GenerateLights();
 
+	// PhysX
+	marble->Move(input, deltaTime, thirdPCamera->GetForwardVector(), thirdPCamera->GetRightVector());
+
+	mScene->simulate(1.0f/60.0f);
+	mScene->fetchResults(true); 
+
+	marble->UpdateEntity();
 }
 
 // --------------------------------------------------------
@@ -730,7 +1019,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 void Game::UpdateGUI(float dt, Input& input)
 {
-	// Reset input manager's gui state so we don’t
+	// Reset input manager's gui state so we donÂ’t
 	// taint our own input (you'll uncomment later)
 	input.SetGuiKeyboardCapture(false);
 	input.SetGuiMouseCapture(false);
@@ -793,7 +1082,7 @@ void Game::UpdateSceneWindow()
 		// number of entities
 		ImGui::Text(ConcatStringAndInt("Number of Entities: ", entities.size()).c_str());
 
-		const char* meshTitles[] = { "Sphere", "Helix", "Cube", "Cone" };
+		const char* meshTitles[] = { "Sphere", "Cube", "Terrain", "Ramp" };
 
 		const char* materialTitles[] = {
 			"Cobblestone",
@@ -957,7 +1246,7 @@ void Game::GenerateCameraHeader()
 {
 	if (ImGui::CollapsingHeader("Cameras")) {
 		// camera information - only one right now
-		ImGui::Text("Current Camera: First-Person Controllable");
+		ImGui::Text("Current Camera: Third-Person Controllable");
 
 		// set position
 		XMFLOAT3 pos = camera->GetTransform()->GetPosition();
@@ -968,6 +1257,13 @@ void Game::GenerateCameraHeader()
 		XMFLOAT3 rot = camera->GetTransform()->GetPitchYawRoll();
 		ImGui::SliderFloat2("Rotation##C", &rot.x, 0.0f, 6.28319f);
 		camera->GetTransform()->SetRotation(rot.x, rot.y, rot.z);
+
+		// show directional vectors
+		XMFLOAT2 forward = thirdPCamera->GetForwardVector();
+		ImGui::InputFloat2("Forward Vector##C", &forward.x);
+
+		XMFLOAT2 right = thirdPCamera->GetRightVector();
+		ImGui::InputFloat2("Right Vector##C", &right.x);
 	}
 }
 
@@ -1111,10 +1407,6 @@ void Game::GenerateEmitterHeader(int i)
 		XMFLOAT3 pos = emitters[i]->GetTransform()->GetPosition();
 		ImGui::InputFloat3(ConcatStringAndInt("Position##Em", i).c_str(), &pos.x);
 		emitters[i]->GetTransform()->SetPosition(pos.x, pos.y, pos.z);
-
-		/*XMFLOAT3 rot = emitters[i]->GetTransform()->GetPitchYawRoll();
-		ImGui::SliderFloat3(ConcatStringAndInt("Rotation##Em", i).c_str(), &rot.x, 0.0f, 6.28319f);
-		emitters[i]->GetTransform()->SetRotation(rot.x, rot.y, rot.z);*/
 
 		XMFLOAT3 scale = emitters[i]->GetTransform()->GetScale();
 		ImGui::InputFloat3(ConcatStringAndInt("Scale##Em", i).c_str(), &scale.x);

@@ -18,6 +18,7 @@ Renderer::Renderer(
 	unsigned int width, 
 	unsigned int height, 
 	Sky* sky, 
+	TerrainEntity* terrain,
 	const std::vector<GameEntity*>& entities, 
 	const std::vector<Light>& lights,
 	const std::vector<Emitter*>& emitters,
@@ -38,6 +39,7 @@ Renderer::Renderer(
 		windowWidth(width),
 		windowHeight(height),
 		sky(sky),
+		terrain(terrain),
 		entities(entities),
 		lights(lights),
 		emitters(emitters),
@@ -246,7 +248,9 @@ void Renderer::Render(Camera* camera, float totalTime)
 	}
 
 	// Draw the light sources
-	DrawPointLights(camera);
+	//DrawPointLights(camera);
+
+	terrain->Draw(context, camera);
 
 	// Draw the sky
 	sky->Draw(camera);
