@@ -150,6 +150,7 @@ void Renderer::Render(Camera* camera, float totalTime)
 	context->ClearRenderTargetView(sceneColorsRTV.Get(), color);
 	context->ClearRenderTargetView(sceneNormalsRTV.Get(), color);
 	context->ClearRenderTargetView(sceneDepthsRTV.Get(), color);
+	context->ClearRenderTargetView(silhouetteRTV.Get(), color);
 	context->ClearDepthStencilView(
 		depthBufferDSV.Get(),
 		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
