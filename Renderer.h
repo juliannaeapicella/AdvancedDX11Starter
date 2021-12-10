@@ -46,7 +46,10 @@ public:
 		SimpleVertexShader* fullscreenVS,
 		SimplePixelShader* solidColorPS,
 		SimplePixelShader* simpleTexturePS,
-		SimplePixelShader* refractionPS);
+		SimplePixelShader* refractionPS,
+		SimplePixelShader* SSRPS,
+		SimplePixelShader* gaussianBlurPS,
+		SimplePixelShader* finalCombinePS);
 	~Renderer();
 
 	void PreResize();
@@ -56,6 +59,12 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetColorsRenderTargetSRV();
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetNormalsRenderTargetSRV();
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetDepthsRenderTargetSRV();
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetDirectLightSRV();
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetIndirectSpecularSRV();
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetAmbientSRV();
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetSpecularColorRoughnessSRV();
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetHorizontalBlurSRV();
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetFinalBlurSRV();
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetSilhouetteRenderTargetSRV();
 
 private:
@@ -69,23 +78,48 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> sceneColorsRTV;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> sceneNormalsRTV;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> sceneDepthsRTV;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> directLightRTV;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> indirectSpecularRTV;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> sceneAmbientRTV;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> specularColorRoughnessRTV;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> horizontalBlurRTV;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> finalBlurRTV;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> silhouetteRTV;
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sceneColorsSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sceneNormalsSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sceneDepthsSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> directLightSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> indirectSpecularSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sceneAmbientSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> specularColorRoughnessSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> horizontalBlurSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> finalBlurSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> silhouetteSRV;
 
 	SimpleVertexShader* fullscreenVS; 
 	SimplePixelShader* solidColorPS;
 	SimplePixelShader* simpleTexturePS;
 	SimplePixelShader* refractionPS;
+	SimplePixelShader* SSRPS;
+	SimplePixelShader* gaussianBlurPS;
+	SimplePixelShader* finalCombinePS;
 
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> refractionSilhouetteDepthState;
 	bool useRefractionSilhouette;
 	bool refractionFromNormalMap;
 	float indexOfRefraction;
 	float refractionScale;
+
+	// SSR variables
+	float ssrMaxSearchDistance;
+	float ssrDepthThickness;
+	float ssrRoughnessThreshold;
+	float ssrEdgeFadeThreshold;
+	int ssrMaxMajorSteps;
+	int ssrMaxRefinementSteps;
+	bool ssrEnabled;
+	bool ssrOutputOnly;
 
 	// particle resources
 	Microsoft::WRL::ComPtr<ID3D11BlendState> particleBlendAdditive;

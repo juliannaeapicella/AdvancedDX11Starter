@@ -148,6 +148,7 @@ void Game::LoadAssetsAndCreateEntities()
 	SimplePixelShader* solidColorPS		= LoadShader(SimplePixelShader, L"SolidColorPS.cso");
 	SimplePixelShader* simpleTexturePS  = LoadShader(SimplePixelShader, L"SimpleTexturePS.cso");
 	SimplePixelShader* refractionPS     = LoadShader(SimplePixelShader, L"RefractionPS.cso");
+	SimplePixelShader* SSRPS            = LoadShader(SimplePixelShader, L"ScreenSpaceReflectionsPS.cso");
 	
 	SimpleVertexShader* skyVS = LoadShader(SimpleVertexShader, L"SkyVS.cso");
 	SimplePixelShader* skyPS  = LoadShader(SimplePixelShader, L"SkyPS.cso");
@@ -156,6 +157,8 @@ void Game::LoadAssetsAndCreateEntities()
 	SimplePixelShader* irradianceMapPS = LoadShader(SimplePixelShader, L"IBLIrradianceMapPS.cso");
 	SimplePixelShader* specularConvolutionPS = LoadShader(SimplePixelShader, L"IBLSpecularConvolutionPS.cso");
 	SimplePixelShader* lookUpTablePS = LoadShader(SimplePixelShader, L"IBLBrdfLookUpTablePS.cso");
+	SimplePixelShader* gaussianBlurPS = LoadShader(SimplePixelShader, L"GaussianBlurPS.cso");
+	SimplePixelShader* finalCombinePS = LoadShader(SimplePixelShader, L"FinalCombinePS.cso");
 
 	SimpleVertexShader* particleVS = LoadShader(SimpleVertexShader, L"ParticleVS.cso");
 	SimplePixelShader* particlePS = LoadShader(SimplePixelShader, L"ParticlePS.cso");
@@ -166,9 +169,12 @@ void Game::LoadAssetsAndCreateEntities()
 	shaders.push_back(solidColorPS);
 	shaders.push_back(simpleTexturePS);
 	shaders.push_back(refractionPS);
+	shaders.push_back(SSRPS);
 	shaders.push_back(skyVS);
 	shaders.push_back(skyPS);
 	shaders.push_back(fullscreenVS);
+	shaders.push_back(gaussianBlurPS);
+	shaders.push_back(finalCombinePS);
 	shaders.push_back(particleVS);
 	shaders.push_back(particlePS);
 
@@ -612,7 +618,10 @@ void Game::LoadAssetsAndCreateEntities()
 		fullscreenVS,
 		solidColorPS,
 		simpleTexturePS,
-		refractionPS
+		refractionPS,
+		SSRPS,
+		gaussianBlurPS,
+		finalCombinePS
 	);
 }
 
@@ -1153,6 +1162,30 @@ void Game::GenerateMRTHeader()
 		ImGui::Text("Depths: ");
 		ImTextureID depths = renderer->GetDepthsRenderTargetSRV().Get();
 		ImGui::Image(depths, size, uv_min, uv_max, tint_col, border_col);
+
+		ImGui::Text("Direct Light: ");
+		ImTextureID directLight = renderer->GetDirectLightSRV().Get();
+		ImGui::Image(directLight, size, uv_min, uv_max, tint_col, border_col);
+
+		ImGui::Text("Indirect Specular: ");
+		ImTextureID indirectSpecular = renderer->GetIndirectSpecularSRV().Get();
+		ImGui::Image(indirectSpecular, size, uv_min, uv_max, tint_col, border_col);
+
+		ImGui::Text("Ambient: ");
+		ImTextureID ambient = renderer->GetAmbientSRV().Get();
+		ImGui::Image(ambient, size, uv_min, uv_max, tint_col, border_col);
+
+		ImGui::Text("Specular Color Roughness: ");
+		ImTextureID specularColorRoughness = renderer->GetSpecularColorRoughnessSRV().Get();
+		ImGui::Image(specularColorRoughness, size, uv_min, uv_max, tint_col, border_col);
+
+		ImGui::Text("Horizontal Blur: ");
+		ImTextureID horizontalBlur = renderer->GetHorizontalBlurSRV().Get();
+		ImGui::Image(horizontalBlur, size, uv_min, uv_max, tint_col, border_col);
+
+		ImGui::Text("Final Blur: ");
+		ImTextureID finalBlur = renderer->GetFinalBlurSRV().Get();
+		ImGui::Image(finalBlur, size, uv_min, uv_max, tint_col, border_col);
 
 		ImGui::Text("Silhouette: ");
 		ImTextureID silhouette = renderer->GetSilhouetteRenderTargetSRV().Get();

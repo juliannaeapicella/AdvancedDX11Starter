@@ -29,7 +29,10 @@ Renderer::Renderer(
 	SimpleVertexShader* fullscreenVS,
 	SimplePixelShader* solidColorPS,
 	SimplePixelShader* simpleTexturePS,
-	SimplePixelShader* refractionPS) :
+	SimplePixelShader* refractionPS,
+	SimplePixelShader* SSRPS,
+	SimplePixelShader* gaussianBlurPS,
+	SimplePixelShader* finalCombinePS) :
 		device(device),
 		context(context),
 		swapChain(swapChain),
@@ -45,6 +48,14 @@ Renderer::Renderer(
 		lightMesh(lightMesh), 
 		lightVS(lightVS),
 		lightPS(lightPS),
+		ssrMaxSearchDistance(5.0f),
+		ssrDepthThickness(0.015f),
+		ssrRoughnessThreshold(1.0f),
+		ssrEdgeFadeThreshold(0.05f),
+		ssrMaxMajorSteps(64),
+		ssrMaxRefinementSteps(32),
+		ssrOutputOnly(true),
+		ssrEnabled(true),
 		refractionScale(0.1f),
 		useRefractionSilhouette(true),
 		refractionFromNormalMap(true),
@@ -52,7 +63,10 @@ Renderer::Renderer(
 		fullscreenVS(fullscreenVS),
 		solidColorPS(solidColorPS),
 		simpleTexturePS(simpleTexturePS),
-		refractionPS(refractionPS) {
+		refractionPS(refractionPS),
+		SSRPS(SSRPS),
+		gaussianBlurPS(gaussianBlurPS),
+		finalCombinePS(finalCombinePS) {
 
 	// initialize structs
 	vsPerFrameData = {};
@@ -75,6 +89,12 @@ Renderer::Renderer(
 	CreateRenderTarget(windowWidth, windowHeight, sceneColorsRTV, sceneColorsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneNormalsRTV, sceneNormalsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneDepthsRTV, sceneDepthsSRV);
+	CreateRenderTarget(windowWidth, windowHeight, directLightRTV, directLightSRV);
+	CreateRenderTarget(windowWidth, windowHeight, indirectSpecularRTV, indirectSpecularSRV);
+	CreateRenderTarget(windowWidth, windowHeight, sceneAmbientRTV, sceneAmbientSRV);
+	CreateRenderTarget(windowWidth, windowHeight, specularColorRoughnessRTV, specularColorRoughnessSRV);
+	CreateRenderTarget(windowWidth, windowHeight, horizontalBlurRTV, horizontalBlurSRV);
+	CreateRenderTarget(windowWidth, windowHeight, finalBlurRTV, finalBlurSRV);
 	CreateRenderTarget(windowWidth, windowHeight, silhouetteRTV, silhouetteSRV);
 
 	D3D11_DEPTH_STENCIL_DESC depthDesc = {};
@@ -100,7 +120,6 @@ Renderer::Renderer(
 	additiveBlendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;  
 	additiveBlendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	device->CreateBlendState(&additiveBlendDesc, particleBlendAdditive.GetAddressOf());
-
 }
 
 Renderer::~Renderer() {
@@ -127,14 +146,35 @@ void Renderer::PostResize(
 	sceneColorsRTV.Reset();
 	sceneNormalsRTV.Reset();
 	sceneDepthsRTV.Reset();
+	directLightRTV.Reset();
+	indirectSpecularRTV.Reset();
+	sceneAmbientRTV.Reset();
+	specularColorRoughnessRTV.Reset();
+	horizontalBlurRTV.Reset();
+	finalBlurRTV.Reset();
+	silhouetteRTV.Reset();
+
 	sceneColorsSRV.Reset();
 	sceneNormalsSRV.Reset();
 	sceneDepthsSRV.Reset();
+	directLightSRV.Reset();
+	indirectSpecularSRV.Reset();
+	sceneAmbientSRV.Reset();
+	specularColorRoughnessSRV.Reset();
+	horizontalBlurSRV.Reset();
+	finalBlurSRV.Reset();
+	silhouetteSRV.Reset();
 
 	// Recreate using the new window size
 	CreateRenderTarget(windowWidth, windowHeight, sceneColorsRTV, sceneColorsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneNormalsRTV, sceneNormalsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneDepthsRTV, sceneDepthsSRV);
+	CreateRenderTarget(windowWidth, windowHeight, directLightRTV, directLightSRV);
+	CreateRenderTarget(windowWidth, windowHeight, indirectSpecularRTV, indirectSpecularSRV);
+	CreateRenderTarget(windowWidth, windowHeight, sceneAmbientRTV, sceneAmbientSRV);
+	CreateRenderTarget(windowWidth, windowHeight, specularColorRoughnessRTV, specularColorRoughnessSRV);
+	CreateRenderTarget(windowWidth, windowHeight, horizontalBlurRTV, horizontalBlurSRV);
+	CreateRenderTarget(windowWidth, windowHeight, finalBlurRTV, finalBlurSRV);
 	CreateRenderTarget(windowWidth, windowHeight, silhouetteRTV, silhouetteSRV);
 }
 
@@ -150,6 +190,12 @@ void Renderer::Render(Camera* camera, float totalTime)
 	context->ClearRenderTargetView(sceneColorsRTV.Get(), color);
 	context->ClearRenderTargetView(sceneNormalsRTV.Get(), color);
 	context->ClearRenderTargetView(sceneDepthsRTV.Get(), color);
+	context->ClearRenderTargetView(directLightRTV.Get(), color);
+	context->ClearRenderTargetView(indirectSpecularRTV.Get(), color);
+	context->ClearRenderTargetView(sceneAmbientRTV.Get(), color);
+	context->ClearRenderTargetView(specularColorRoughnessRTV.Get(), color);
+	context->ClearRenderTargetView(horizontalBlurRTV.Get(), color);
+	context->ClearRenderTargetView(finalBlurRTV.Get(), color);
 	context->ClearRenderTargetView(silhouetteRTV.Get(), color);
 	context->ClearDepthStencilView(
 		depthBufferDSV.Get(),
@@ -157,12 +203,15 @@ void Renderer::Render(Camera* camera, float totalTime)
 		1.0f,
 		0);
 
-	ID3D11RenderTargetView* renderTargets[3] = {};
-	renderTargets[0] = sceneColorsRTV.Get();
-	renderTargets[1] = sceneNormalsRTV.Get();
-	renderTargets[2] = sceneDepthsRTV.Get();
+	ID3D11RenderTargetView* renderTargets[6] = {};
+	renderTargets[0] = directLightRTV.Get();
+	renderTargets[1] = indirectSpecularRTV.Get();
+	renderTargets[2] = sceneAmbientRTV.Get();
+	renderTargets[3] = sceneNormalsRTV.Get();
+	renderTargets[4] = specularColorRoughnessRTV.Get();
+	renderTargets[5] = sceneDepthsRTV.Get();
 
-	context->OMSetRenderTargets(3, renderTargets, depthBufferDSV.Get());
+	context->OMSetRenderTargets(6, renderTargets, depthBufferDSV.Get());
 
 	// collect per frame data
 	{
@@ -254,10 +303,109 @@ void Renderer::Render(Camera* camera, float totalTime)
 
 	fullscreenVS->SetShader();
 
+	// Calculate the inverse of the camera matrices
+	XMFLOAT4X4 invView, invProj, view = camera->GetView(), proj = camera->GetProjection();
+	XMStoreFloat4x4(&invView, XMMatrixInverse(0, XMLoadFloat4x4(&view)));
+	XMStoreFloat4x4(&invProj, XMMatrixInverse(0, XMLoadFloat4x4(&proj)));
+
+	// Render screen-space reflection
+	if (ssrEnabled)
+	{
+		renderTargets[0] = sceneColorsRTV.Get();
+		renderTargets[1] = 0;
+		renderTargets[2] = 0;
+		renderTargets[3] = 0;
+		renderTargets[4] = 0;
+		renderTargets[5] = 0;
+		context->OMSetRenderTargets(6, renderTargets, 0);
+
+		SimplePixelShader* ssrPS = SSRPS;
+		ssrPS->SetShader();
+
+		ssrPS->SetMatrix4x4("invViewMatrix", invView);
+		ssrPS->SetMatrix4x4("invProjMatrix", invProj);
+		ssrPS->SetMatrix4x4("viewMatrix", view);
+		ssrPS->SetMatrix4x4("projectionMatrix", proj);
+		ssrPS->SetFloat("maxSearchDistance", ssrMaxSearchDistance);
+		ssrPS->SetFloat("depthThickness", ssrDepthThickness);
+		ssrPS->SetFloat("roughnessThreshold", ssrRoughnessThreshold);
+		ssrPS->SetFloat("edgeFadeThreshold", ssrEdgeFadeThreshold);
+		ssrPS->SetInt("maxMajorSteps", ssrMaxMajorSteps);
+		ssrPS->SetInt("maxRefinementSteps", ssrMaxRefinementSteps);
+		ssrPS->SetFloat("nearClip", camera->GetNearClip());
+		ssrPS->SetFloat("farClip", camera->GetFarClip());
+		ssrPS->CopyAllBufferData();
+
+		ssrPS->SetShaderResourceView("SceneDirectLight", directLightSRV);
+		ssrPS->SetShaderResourceView("SceneIndirectSpecular", indirectSpecularSRV);
+		ssrPS->SetShaderResourceView("SceneAmbient", sceneAmbientSRV);
+		ssrPS->SetShaderResourceView("Normals", sceneNormalsSRV);
+		ssrPS->SetShaderResourceView("SpecColorRoughness", specularColorRoughnessSRV);
+		ssrPS->SetShaderResourceView("Depths", sceneDepthsSRV);
+		ssrPS->SetShaderResourceView("BRDFLookUp", sky->GetBRDFLookUpTexture());
+
+		context->Draw(3, 0);
+
+		// add blur
+		gaussianBlurPS->SetShader();
+		gaussianBlurPS->SetInt("blurAlpha", 1);
+		gaussianBlurPS->SetFloat2("pixelSize", XMFLOAT2(1.0f / windowWidth, 1.0f / windowHeight));
+
+		// horizontal
+		renderTargets[0] = horizontalBlurRTV.Get();
+		context->OMSetRenderTargets(1, renderTargets, 0);
+
+		gaussianBlurPS->SetFloat2("blurDirection", XMFLOAT2(1.0f, 0.0f));
+		gaussianBlurPS->CopyAllBufferData();
+		gaussianBlurPS->SetShaderResourceView("PixelColors", sceneColorsSRV.Get());
+
+		context->Draw(3, 0);
+
+		// vertical
+		renderTargets[0] = finalBlurRTV.Get();
+		context->OMSetRenderTargets(1, renderTargets, 0);
+
+		gaussianBlurPS->SetFloat2("blurDirection", XMFLOAT2(0.0f, 1.0f));
+		gaussianBlurPS->CopyAllBufferData();
+		gaussianBlurPS->SetShaderResourceView("PixelColors", horizontalBlurSRV.Get());
+
+		context->Draw(3, 0);
+	}
+
+	// Final combine
+	{
+		renderTargets[0] = backBufferRTV.Get();
+		renderTargets[1] = 0;
+		renderTargets[2] = 0;
+		renderTargets[3] = 0;
+		renderTargets[4] = 0;
+		renderTargets[5] = 0;
+		context->OMSetRenderTargets(1, renderTargets, 0);
+
+		finalCombinePS->SetShader();
+		finalCombinePS->SetShaderResourceView("SceneDirectLight", directLightSRV);
+		finalCombinePS->SetShaderResourceView("SceneIndirectSpecular", indirectSpecularSRV);
+		finalCombinePS->SetShaderResourceView("SceneAmbient", sceneAmbientSRV);
+		finalCombinePS->SetShaderResourceView("Normals", sceneNormalsSRV);
+		finalCombinePS->SetShaderResourceView("SSAOBlur", 0);
+		finalCombinePS->SetShaderResourceView("SSR", sceneColorsSRV);
+		finalCombinePS->SetShaderResourceView("SSRBlur", finalBlurSRV);
+		finalCombinePS->SetShaderResourceView("SpecularColorRoughness", specularColorRoughnessSRV);
+		finalCombinePS->SetShaderResourceView("BRDFLookUp", sky->GetBRDFLookUpTexture());
+		finalCombinePS->SetInt("ssaoEnabled", false);
+		finalCombinePS->SetInt("ssaoOutputOnly", false);
+		finalCombinePS->SetInt("ssrEnabled", ssrEnabled);
+		finalCombinePS->SetInt("ssrOutputOnly", ssrOutputOnly);
+		finalCombinePS->SetFloat2("pixelSize", XMFLOAT2(1.0f / windowWidth, 1.0f / windowHeight));
+		finalCombinePS->SetFloat3("viewVector", XMFLOAT3(0, 0, 0));
+		finalCombinePS->CopyAllBufferData();
+		context->Draw(3, 0);
+	}
+
 	renderTargets[0] = backBufferRTV.Get();
 	context->OMSetRenderTargets(1, renderTargets, 0);
 	simpleTexturePS->SetShader();
-	simpleTexturePS->SetShaderResourceView("Pixels", sceneColorsSRV);
+	simpleTexturePS->SetShaderResourceView("Pixels", directLightSRV);
 	context->Draw(3, 0);
 
 	// Loop and render the refractive objects to the silhouette texture (if use silhouettes)
@@ -387,6 +535,36 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Renderer::GetNormalsRenderTarge
 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Renderer::GetDepthsRenderTargetSRV()
 {
 	return sceneDepthsSRV;
+}
+
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Renderer::GetDirectLightSRV()
+{
+	return directLightSRV;
+}
+
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Renderer::GetIndirectSpecularSRV()
+{
+	return indirectSpecularSRV;
+}
+
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Renderer::GetAmbientSRV()
+{
+	return sceneAmbientSRV;
+}
+
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Renderer::GetSpecularColorRoughnessSRV()
+{
+	return specularColorRoughnessSRV;
+}
+
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Renderer::GetHorizontalBlurSRV()
+{
+	return horizontalBlurSRV;
+}
+
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Renderer::GetFinalBlurSRV()
+{
+	return finalBlurSRV;
 }
 
 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Renderer::GetSilhouetteRenderTargetSRV()

@@ -4,10 +4,12 @@
 using namespace DirectX;
 
 // Creates a camera at the specified position
-Camera::Camera(float x, float y, float z, float moveSpeed, float mouseLookSpeed, float aspectRatio)
+Camera::Camera(float x, float y, float z, float moveSpeed, float mouseLookSpeed, float aspectRatio, float nearClip, float farClip)
 {
 	this->movementSpeed = moveSpeed;
 	this->mouseLookSpeed = mouseLookSpeed;
+	this->nearClip = nearClip;
+	this->farClip = farClip;
 	transform.SetPosition(x, y, z);
 
 	UpdateViewMatrix();
@@ -86,3 +88,9 @@ Transform* Camera::GetTransform()
 {
 	return &transform;
 }
+
+float Camera::GetNearClip() { return nearClip; }
+float Camera::GetFarClip() { return farClip; }
+
+void Camera::SetNearClip(float nearClip) { this->nearClip = nearClip; }
+void Camera::SetFarClip(float farClip) { this->farClip = farClip; }
