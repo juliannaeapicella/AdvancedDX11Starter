@@ -372,40 +372,10 @@ void Renderer::Render(Camera* camera, float totalTime)
 		context->Draw(3, 0);
 	}
 
-	// Final combine
-	{
-		renderTargets[0] = backBufferRTV.Get();
-		renderTargets[1] = 0;
-		renderTargets[2] = 0;
-		renderTargets[3] = 0;
-		renderTargets[4] = 0;
-		renderTargets[5] = 0;
-		context->OMSetRenderTargets(1, renderTargets, 0);
-
-		finalCombinePS->SetShader();
-		finalCombinePS->SetShaderResourceView("SceneDirectLight", directLightSRV);
-		finalCombinePS->SetShaderResourceView("SceneIndirectSpecular", indirectSpecularSRV);
-		finalCombinePS->SetShaderResourceView("SceneAmbient", sceneAmbientSRV);
-		finalCombinePS->SetShaderResourceView("Normals", sceneNormalsSRV);
-		finalCombinePS->SetShaderResourceView("SSAOBlur", 0);
-		finalCombinePS->SetShaderResourceView("SSR", sceneColorsSRV);
-		finalCombinePS->SetShaderResourceView("SSRBlur", finalBlurSRV);
-		finalCombinePS->SetShaderResourceView("SpecularColorRoughness", specularColorRoughnessSRV);
-		finalCombinePS->SetShaderResourceView("BRDFLookUp", sky->GetBRDFLookUpTexture());
-		finalCombinePS->SetInt("ssaoEnabled", false);
-		finalCombinePS->SetInt("ssaoOutputOnly", false);
-		finalCombinePS->SetInt("ssrEnabled", ssrEnabled);
-		finalCombinePS->SetInt("ssrOutputOnly", ssrOutputOnly);
-		finalCombinePS->SetFloat2("pixelSize", XMFLOAT2(1.0f / windowWidth, 1.0f / windowHeight));
-		finalCombinePS->SetFloat3("viewVector", XMFLOAT3(0, 0, 0));
-		finalCombinePS->CopyAllBufferData();
-		context->Draw(3, 0);
-	}
-
 	renderTargets[0] = backBufferRTV.Get();
 	context->OMSetRenderTargets(1, renderTargets, 0);
 	simpleTexturePS->SetShader();
-	simpleTexturePS->SetShaderResourceView("Pixels", directLightSRV);
+	simpleTexturePS->SetShaderResourceView("Pixels", sceneColorsSRV);
 	context->Draw(3, 0);
 
 	// Loop and render the refractive objects to the silhouette texture (if use silhouettes)

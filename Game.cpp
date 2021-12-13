@@ -372,15 +372,15 @@ void Game::LoadAssetsAndCreateEntities()
 	
 	GameEntity* solidMetalSphereR3 = new GameEntity(sphereMesh, solidMetalMaterialR3);
 	solidMetalSphereR3->GetTransform()->SetScale(2, 2, 2);
-	solidMetalSphereR3->GetTransform()->SetPosition(2, 1, 0);
+	solidMetalSphereR3->GetTransform()->SetPosition(2, 1, 0);*/
 
-	GameEntity* solidSphereR1 = new GameEntity(sphereMesh, solidMaterialR1);
-	solidSphereR1->GetTransform()->SetScale(2, 2, 2);
-	solidSphereR1->GetTransform()->SetPosition(-2, -1, 0);
+	GameEntity* solidSphereR1 = new GameEntity(cubeMesh, solidMaterialR3);
+	solidSphereR1->GetTransform()->SetScale(5, 1, 5);
+	solidSphereR1->GetTransform()->SetPosition(0, -2, 0);
 
-	GameEntity* solidSphereR2 = new GameEntity(sphereMesh, solidMaterialR2);
+	GameEntity* solidSphereR2 = new GameEntity(sphereMesh, solidMaterialR3);
 	solidSphereR2->GetTransform()->SetScale(2, 2, 2);
-	solidSphereR2->GetTransform()->SetPosition(0, -1, 0);*/
+	solidSphereR2->GetTransform()->SetPosition(2, 0, 0);
 
 	GameEntity* solidSphereR3 = new GameEntity(sphereMesh, solidMaterialR2);
 	solidSphereR3->GetTransform()->SetScale(2, 2, 2);
@@ -388,9 +388,9 @@ void Game::LoadAssetsAndCreateEntities()
 
 	/*entities.push_back(solidMetalSphereR1);
 	entities.push_back(solidMetalSphereR2);
-	entities.push_back(solidMetalSphereR3);
+	entities.push_back(solidMetalSphereR3);*/
 	entities.push_back(solidSphereR1);
-	entities.push_back(solidSphereR2);*/
+	entities.push_back(solidSphereR2);
 	entities.push_back(solidSphereR3);
 
 	// === Create the PBR entities =====================================

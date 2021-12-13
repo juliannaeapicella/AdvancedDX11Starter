@@ -40,9 +40,12 @@ struct VertexToPixel
 
 struct PS_Output
 {
-	float4 color	: SV_TARGET0;
-	float4 normals	: SV_TARGET1;
-	float4 depths   : SV_TARGET2;
+	float4 directLight		  : SV_TARGET0;
+	float4 indirectSpecular	  : SV_TARGET1;
+	float4 ambientColor		  : SV_TARGET2;
+	float4 normals			  : SV_TARGET3;
+	float4 specColorRoughness : SV_TARGET4;
+	float depths              : SV_TARGET5;
 };
 
 // Texture-related variables
@@ -64,11 +67,9 @@ SamplerState ClampSampler       : register(s1);
 // Entry point for this pixel shader
 PS_Output main(VertexToPixel input)
 {
-	// Always re-normalize interpolated direction vectors
 	input.normal = normalize(input.normal);
 	input.tangent = normalize(input.tangent);
 
-	// Sample various textures
 	input.normal = NormalMapping(NormalTexture, BasicSampler, input.uv, input.normal, input.tangent);
 	float roughness = RoughnessTexture.Sample(BasicSampler, input.uv).r;
 	float metal = MetalTexture.Sample(BasicSampler, input.uv).r;
@@ -77,61 +78,47 @@ PS_Output main(VertexToPixel input)
 	float4 surfaceColor = AlbedoTexture.Sample(BasicSampler, input.uv);
 	surfaceColor.rgb = pow(surfaceColor.rgb, 2.2) * Color.rgb;
 
-	// Specular color - Assuming albedo texture is actually holding specular color if metal == 1
-	// Note the use of lerp here - metal is generally 0 or 1, but might be in between
-	// because of linear texture sampling, so we want lerp the specular color to match
 	float3 specColor = lerp(F0_NON_METAL.rrr, surfaceColor.rgb, metal);
 
 	// Total color for this pixel
-	float3 totalColor = float3(0,0,0);
+	float3 totalDirectLight = float3(0, 0, 0);
 
-	// Loop through all lights this frame
-	for(int i = 0; i < LightCount; i++)
+	for (int i = 0; i < LightCount; i++)
 	{
-		// Which kind of light?
 		switch (Lights[i].Type)
 		{
 		case LIGHT_TYPE_DIRECTIONAL:
-			totalColor += DirLightPBR(Lights[i], input.normal, input.worldPos, CameraPosition, roughness, metal, surfaceColor.rgb, specColor);
+			totalDirectLight += DirLightPBR(Lights[i], input.normal, input.worldPos, CameraPosition, roughness, metal, surfaceColor.rgb, specColor);
 			break;
 
 		case LIGHT_TYPE_POINT:
-			totalColor += PointLightPBR(Lights[i], input.normal, input.worldPos, CameraPosition, roughness, metal, surfaceColor.rgb, specColor);
+			totalDirectLight += PointLightPBR(Lights[i], input.normal, input.worldPos, CameraPosition, roughness, metal, surfaceColor.rgb, specColor);
 			break;
 
 		case LIGHT_TYPE_SPOT:
-			totalColor += SpotLightPBR(Lights[i], input.normal, input.worldPos, CameraPosition, roughness, metal, surfaceColor.rgb, specColor);
+			totalDirectLight += SpotLightPBR(Lights[i], input.normal, input.worldPos, CameraPosition, roughness, metal, surfaceColor.rgb, specColor);
 			break;
 		}
 	}
 
-	// Calculate requisite reflection vectors
 	float3 viewToCam = normalize(CameraPosition - input.worldPos);
 	float3 viewRefl = normalize(reflect(-viewToCam, input.normal));
 	float NdotV = saturate(dot(input.normal, viewToCam));
-	
-	// Indirect lighting
-	float3 indirectDiffuse = IndirectDiffuse(IrradianceIBLMap, BasicSampler, input.normal);
-	float3 indirectSpecular = IndirectSpecular(
-		SpecularIBLMap, 
-		SpecIBLTotalMipLevels,
-		BrdfLookUpMap, 
-		ClampSampler, // MUST use the clamp sampler here!
-		viewRefl, 
-		NdotV,
-		roughness, 
-		specColor);
-	
-	// Balance indirect diff/spec
-	float3 balancedDiff = DiffuseEnergyConserve(indirectDiffuse, indirectSpecular, metal);
-	float3 fullIndirect = indirectSpecular + balancedDiff * surfaceColor.rgb;
-	
-	// Add the indirect to the direct
-	totalColor += fullIndirect;
 
+	float3 indirectDiffuse = IndirectDiffuse(IrradianceIBLMap, BasicSampler, input.normal) * surfaceColor.rgb;
+	float3 indirectSpecular = IndirectSpecular(
+		SpecularIBLMap, SpecIBLTotalMipLevels,
+		BrdfLookUpMap, ClampSampler, // MUST use the clamp sampler here!
+		viewRefl, NdotV,
+		roughness, specColor);
+
+	float gammaPower = 1.0f / 2.2f;
 	PS_Output output;
-	output.color = float4(pow(totalColor, 1.0f / 2.2f), 1); // Gamma correction
-	output.normals = float4(input.normal * 0.5f + 0.5f, 1);
+	output.directLight = float4(totalDirectLight, 1);
+	output.indirectSpecular = float4(indirectSpecular, metal);
+	output.ambientColor = float4(indirectDiffuse, 1);
+	output.normals = float4(input.normal, 1);
+	output.specColorRoughness = float4(specColor, roughness);
 	output.depths = input.screenPosition.z;
 	return output;
 }
