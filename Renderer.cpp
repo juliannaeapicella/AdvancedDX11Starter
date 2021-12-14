@@ -54,7 +54,7 @@ Renderer::Renderer(
 		ssrEdgeFadeThreshold(0.05f),
 		ssrMaxMajorSteps(64),
 		ssrMaxRefinementSteps(32),
-		ssrOutputOnly(true),
+		ssrOutputOnly(false),
 		ssrEnabled(true),
 		refractionScale(0.1f),
 		useRefractionSilhouette(true),
@@ -88,7 +88,7 @@ Renderer::Renderer(
 	// Create render targets
 	CreateRenderTarget(windowWidth, windowHeight, sceneColorsRTV, sceneColorsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneNormalsRTV, sceneNormalsSRV);
-	CreateRenderTarget(windowWidth, windowHeight, sceneDepthsRTV, sceneDepthsSRV);
+	CreateRenderTarget(windowWidth, windowHeight, sceneDepthsRTV, sceneDepthsSRV, DXGI_FORMAT_R32_FLOAT);
 	CreateRenderTarget(windowWidth, windowHeight, directLightRTV, directLightSRV);
 	CreateRenderTarget(windowWidth, windowHeight, indirectSpecularRTV, indirectSpecularSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneAmbientRTV, sceneAmbientSRV);
@@ -168,7 +168,7 @@ void Renderer::PostResize(
 	// Recreate using the new window size
 	CreateRenderTarget(windowWidth, windowHeight, sceneColorsRTV, sceneColorsSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneNormalsRTV, sceneNormalsSRV);
-	CreateRenderTarget(windowWidth, windowHeight, sceneDepthsRTV, sceneDepthsSRV);
+	CreateRenderTarget(windowWidth, windowHeight, sceneDepthsRTV, sceneDepthsSRV, DXGI_FORMAT_R32_FLOAT);
 	CreateRenderTarget(windowWidth, windowHeight, directLightRTV, directLightSRV);
 	CreateRenderTarget(windowWidth, windowHeight, indirectSpecularRTV, indirectSpecularSRV);
 	CreateRenderTarget(windowWidth, windowHeight, sceneAmbientRTV, sceneAmbientSRV);
@@ -182,6 +182,7 @@ void Renderer::Render(Camera* camera, float totalTime)
 {
 	// Background color for clearing
 	const float color[4] = { 0, 0, 0, 1 };
+	const float depth[4] = { 1, 0, 0, 0 };
 
 	// Clear the render target and depth buffer (erases what's on the screen)
 	//  - Do this ONCE PER FRAME
@@ -189,7 +190,7 @@ void Renderer::Render(Camera* camera, float totalTime)
 	context->ClearRenderTargetView(backBufferRTV.Get(), color);
 	context->ClearRenderTargetView(sceneColorsRTV.Get(), color);
 	context->ClearRenderTargetView(sceneNormalsRTV.Get(), color);
-	context->ClearRenderTargetView(sceneDepthsRTV.Get(), color);
+	context->ClearRenderTargetView(sceneDepthsRTV.Get(), depth);
 	context->ClearRenderTargetView(directLightRTV.Get(), color);
 	context->ClearRenderTargetView(indirectSpecularRTV.Get(), color);
 	context->ClearRenderTargetView(sceneAmbientRTV.Get(), color);
@@ -325,7 +326,7 @@ void Renderer::Render(Camera* camera, float totalTime)
 		ssrPS->SetMatrix4x4("invViewMatrix", invView);
 		ssrPS->SetMatrix4x4("invProjMatrix", invProj);
 		ssrPS->SetMatrix4x4("viewMatrix", view);
-		ssrPS->SetMatrix4x4("projectionMatrix", proj);
+		ssrPS->SetMatrix4x4("projMatrix", proj);
 		ssrPS->SetFloat("maxSearchDistance", ssrMaxSearchDistance);
 		ssrPS->SetFloat("depthThickness", ssrDepthThickness);
 		ssrPS->SetFloat("roughnessThreshold", ssrRoughnessThreshold);
@@ -373,10 +374,40 @@ void Renderer::Render(Camera* camera, float totalTime)
 	}
 
 	renderTargets[0] = backBufferRTV.Get();
+	renderTargets[1] = 0;
+	renderTargets[2] = 0;
+	renderTargets[3] = 0;
+	renderTargets[4] = 0;
+	renderTargets[5] = 0;
+	context->OMSetRenderTargets(1, renderTargets, 0);
+
+	finalCombinePS->SetShader();
+	finalCombinePS->SetShaderResourceView("SceneDirectLight", directLightSRV);
+	finalCombinePS->SetShaderResourceView("SceneIndirectSpecular", indirectSpecularSRV);
+	finalCombinePS->SetShaderResourceView("SceneAmbient", sceneAmbientSRV);
+	finalCombinePS->SetShaderResourceView("Normals", sceneNormalsSRV);
+	//finalCombinePS->SetShaderResourceView("SSAOBlur", finalBlurSRV);
+	finalCombinePS->SetShaderResourceView("SSR", sceneColorsSRV);
+	finalCombinePS->SetShaderResourceView("SSRBlur", finalBlurSRV);
+	finalCombinePS->SetShaderResourceView("SpecularColorRoughness", specularColorRoughnessSRV);
+	finalCombinePS->SetShaderResourceView("BRDFLookUp", sky->GetBRDFLookUpTexture());
+	finalCombinePS->SetInt("ssaoEnabled", false);
+	finalCombinePS->SetInt("ssaoOutputOnly", false);
+	finalCombinePS->SetInt("ssrEnabled", ssrEnabled);
+	finalCombinePS->SetInt("ssrOutputOnly", ssrOutputOnly);
+	finalCombinePS->SetFloat2("pixelSize", XMFLOAT2(1.0f / windowWidth, 1.0f / windowHeight));
+	//finalCombinePS->SetFloat3("viewVector", camera->GetTransform()->GetForward());
+	finalCombinePS->CopyAllBufferData();
+
+	// reduce graininess, why are non-metals reflecting? blur combine
+
+	context->Draw(3, 0);
+
+	/*renderTargets[0] = backBufferRTV.Get();
 	context->OMSetRenderTargets(1, renderTargets, 0);
 	simpleTexturePS->SetShader();
 	simpleTexturePS->SetShaderResourceView("Pixels", sceneColorsSRV);
-	context->Draw(3, 0);
+	context->Draw(3, 0);*/
 
 	// Loop and render the refractive objects to the silhouette texture (if use silhouettes)
 	if (useRefractionSilhouette)
@@ -595,7 +626,7 @@ void Renderer::DrawPointLights(Camera* camera)
 	}
 }
 
-void Renderer::CreateRenderTarget(unsigned int width, unsigned int height, Microsoft::WRL::ComPtr<ID3D11RenderTargetView>& rtv, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& srv)
+void Renderer::CreateRenderTarget(unsigned int width, unsigned int height, Microsoft::WRL::ComPtr<ID3D11RenderTargetView>& rtv, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& srv, DXGI_FORMAT format)
 {
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> rtTexture;
 
@@ -604,7 +635,7 @@ void Renderer::CreateRenderTarget(unsigned int width, unsigned int height, Micro
 	texDesc.Height = height;
 	texDesc.ArraySize = 1;
 	texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE; // Need both!
-	texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Might occasionally use other formats
+	texDesc.Format = format; // Might occasionally use other formats
 	texDesc.MipLevels = 1; // Usually no mip chain needed for render targets
 	texDesc.MiscFlags = 0;
 	texDesc.SampleDesc.Count = 1; // Can't be zero

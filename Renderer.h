@@ -150,5 +150,6 @@ private:
 		unsigned int width,
 		unsigned int height,
 		Microsoft::WRL::ComPtr<ID3D11RenderTargetView>& rtv,
-		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& srv);
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& srv,
+		DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM);
 };

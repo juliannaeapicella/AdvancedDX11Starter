@@ -192,7 +192,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 
 	float3 pixelPositionViewSpace = ViewSpaceFromDepth(input.uv, pixelDepth);
 
-	float3 normal = Normals.Sample(BasicSampler, input.uv).xyz;
+	float3 normal = Normals.Sample(BasicSampler, input.uv).xyz * 2 - 1;
 	float3 normalViewSpace = normalize(mul((float3x3)viewMatrix, normal));
 
 	float3 reflViewSpace = normalize(reflect(pixelPositionViewSpace, normalViewSpace));

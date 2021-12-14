@@ -117,7 +117,7 @@ PS_Output main(VertexToPixel input)
 	output.directLight = float4(totalDirectLight, 1);
 	output.indirectSpecular = float4(indirectSpecular, metal);
 	output.ambientColor = float4(indirectDiffuse, 1);
-	output.normals = float4(input.normal, 1);
+	output.normals = float4(input.normal * 0.5f + 0.5f, 1);
 	output.specColorRoughness = float4(specColor, roughness);
 	output.depths = input.screenPosition.z;
 	return output;
