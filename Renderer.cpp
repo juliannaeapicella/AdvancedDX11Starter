@@ -50,7 +50,7 @@ Renderer::Renderer(
 		lightPS(lightPS),
 		ssrMaxSearchDistance(5.0f),
 		ssrDepthThickness(0.015f),
-		ssrRoughnessThreshold(1.0f),
+		ssrRoughnessThreshold(0.9f),
 		ssrEdgeFadeThreshold(0.05f),
 		ssrMaxMajorSteps(64),
 		ssrMaxRefinementSteps(32),
@@ -386,20 +386,16 @@ void Renderer::Render(Camera* camera, float totalTime)
 	finalCombinePS->SetShaderResourceView("SceneIndirectSpecular", indirectSpecularSRV);
 	finalCombinePS->SetShaderResourceView("SceneAmbient", sceneAmbientSRV);
 	finalCombinePS->SetShaderResourceView("Normals", sceneNormalsSRV);
-	//finalCombinePS->SetShaderResourceView("SSAOBlur", finalBlurSRV);
 	finalCombinePS->SetShaderResourceView("SSR", sceneColorsSRV);
 	finalCombinePS->SetShaderResourceView("SSRBlur", finalBlurSRV);
 	finalCombinePS->SetShaderResourceView("SpecularColorRoughness", specularColorRoughnessSRV);
 	finalCombinePS->SetShaderResourceView("BRDFLookUp", sky->GetBRDFLookUpTexture());
-	finalCombinePS->SetInt("ssaoEnabled", false);
-	finalCombinePS->SetInt("ssaoOutputOnly", false);
 	finalCombinePS->SetInt("ssrEnabled", ssrEnabled);
 	finalCombinePS->SetInt("ssrOutputOnly", ssrOutputOnly);
 	finalCombinePS->SetFloat2("pixelSize", XMFLOAT2(1.0f / windowWidth, 1.0f / windowHeight));
-	//finalCombinePS->SetFloat3("viewVector", camera->GetTransform()->GetForward());
 	finalCombinePS->CopyAllBufferData();
 
-	// reduce graininess, why are non-metals reflecting? blur combine
+	// reduce graininess
 
 	context->Draw(3, 0);
 

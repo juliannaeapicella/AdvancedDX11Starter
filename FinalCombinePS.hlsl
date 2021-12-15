@@ -3,8 +3,6 @@
 cbuffer externalData : register(b0)
 {
 	float3 viewVector;
-	int ssaoEnabled;
-	int ssaoOutputOnly;
 	int ssrEnabled;
 	int ssrOutputOnly;
 	float2 pixelSize;
@@ -20,7 +18,6 @@ struct VertexToPixel
 Texture2D SceneDirectLight		: register(t0);
 Texture2D SceneIndirectSpecular	: register(t1);
 Texture2D SceneAmbient			: register(t2);
-Texture2D SSAOBlur				: register(t3);
 Texture2D SSR					: register(t4);
 Texture2D SSRBlur				: register(t5);
 Texture2D SpecularColorRoughness: register(t6);
@@ -30,13 +27,7 @@ SamplerState BasicSampler		: register(s0);
 
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	// if ssao only
-	float ao = SSAOBlur.Sample(BasicSampler, input.uv).r;
-	if (ssaoOutputOnly)
-		return float4(ao.rrr, 1);
-
-	if (!ssaoEnabled)
-		ao = 1.0f;
+	float ao = 1.0f;
 
 	// if ssr only
 	float4 ssr = SSR.Sample(BasicSampler, input.uv);
@@ -53,7 +44,11 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float4 ssrBlur = SSRBlur.Sample(BasicSampler, input.uv);
 	float4 specRough = SpecularColorRoughness.Sample(BasicSampler, input.uv);
 	float3 specColor = specRough.rgb;
-	float roughness = specRough.a;
+	float roughness = specRough.a + 0.5f;
+
+	ssrBlur.rgb *= roughness ;
+	ssr.rgb = lerp(ssr.rgb, ssrBlur.rgb, roughness);
+	ssr.a = lerp(ssr.a, ssrBlur.a, roughness);
 
 	colorIndirect.rgb = ssrEnabled ? lerp(colorIndirect.rgb, ssr.rgb, ssr.a) : colorIndirect.rgb;
 
