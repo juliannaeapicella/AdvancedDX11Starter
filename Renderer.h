@@ -21,6 +21,8 @@ struct PSPerFrameData
 	int LightCount;
 	DirectX::XMFLOAT3 CameraPosition;
 	int SpecIBLTotalMipLevels;
+	float NearClip;
+	float FarClip;
 };
 
 class Renderer

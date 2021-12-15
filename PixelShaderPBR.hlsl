@@ -18,6 +18,9 @@ cbuffer perFrame : register(b0)
 
 	// mip levels in IBL cube map
 	int SpecIBLTotalMipLevels;
+
+	float nearClip;
+	float farClip;
 };
 
 // Data that can change per material
@@ -119,6 +122,6 @@ PS_Output main(VertexToPixel input)
 	output.ambientColor = float4(indirectDiffuse, 1);
 	output.normals = float4(input.normal * 0.5f + 0.5f, 1);
 	output.specColorRoughness = float4(specColor, roughness);
-	output.depths = input.screenPosition.z;
+	output.depths = input.screenPosition.z; //nearClip * farClip / (farClip + input.screenPosition.z * (nearClip - farClip));
 	return output;
 }

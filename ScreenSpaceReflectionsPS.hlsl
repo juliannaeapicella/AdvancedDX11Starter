@@ -36,6 +36,13 @@ Texture2D BRDFLookUp			: register(t6);
 SamplerState BasicSampler		: register(s0);
 SamplerState ClampSampler		: register(s1);
 
+float LinearizeDepth(float depth) 
+{
+	float a = farClip / (farClip - nearClip);
+	float b = farClip * nearClip / (nearClip - farClip);
+	return a + b / depth;
+}
+
 float3 ViewSpaceFromDepth(float2 uv, float depth)
 {
 	uv.y = 1.0f - uv.y; // flip Y for NDC <-> UV coordinate systems
@@ -94,6 +101,8 @@ float3 ScreenSpaceReflection(float2 thisUV, float thisDepth, float3 pixelPositio
 		float3 posUVSpace = originUVSpace + rayUVSpace * t;
 
 		float sampleDepth = Depths.SampleLevel(ClampSampler, posUVSpace.xy, 0).r;
+		//float sampleDepth = LinearizeDepth(Depths.SampleLevel(ClampSampler, posUVSpace.xy, 0).r);
+
 		float depthDiff = posUVSpace.z - sampleDepth;
 		if (depthDiff > 0)
 		{
@@ -104,6 +113,8 @@ float3 ScreenSpaceReflection(float2 thisUV, float thisDepth, float3 pixelPositio
 				// check between the last two spots
 				midPosUVSpace = lerp(lastFailedPos, posUVSpace, 0.5f);
 				sampleDepth = Depths.SampleLevel(ClampSampler, midPosUVSpace.xy, 0).r;
+				//sampleDepth = LinearizeDepth(Depths.SampleLevel(ClampSampler, midPosUVSpace.xy, 0).r);
+
 				depthDiff = midPosUVSpace.z - sampleDepth;
 
 				if (depthDiff == 0)
@@ -180,6 +191,7 @@ float FadeReflections(bool validHit, float3 hitPos, float3 reflViewSpace, float3
 float4 main(VertexToPixel input) : SV_TARGET
 {
 	float pixelDepth = Depths.Sample(ClampSampler, input.uv).r;
+	//float pixelDepth = LinearizeDepth(Depths.Sample(ClampSampler, input.uv).r);
 	if (pixelDepth == 1.0f)
 		return float4(0,0,0,0);
 

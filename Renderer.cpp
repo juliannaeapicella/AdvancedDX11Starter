@@ -224,6 +224,8 @@ void Renderer::Render(Camera* camera, float totalTime)
 		psPerFrameData.LightCount = lightCount;
 		psPerFrameData.CameraPosition = camera->GetTransform()->GetPosition();
 		psPerFrameData.SpecIBLTotalMipLevels = sky->GetMipLevels();
+		psPerFrameData.NearClip = camera->GetNearClip();
+		psPerFrameData.FarClip = camera->GetFarClip();
 		context->UpdateSubresource(psPerFrameConstantBuffer.Get(), 0, 0, &psPerFrameData, 0, 0);
 	}
 

@@ -374,15 +374,15 @@ void Game::LoadAssetsAndCreateEntities()
 	solidMetalSphereR3->GetTransform()->SetScale(2, 2, 2);
 	solidMetalSphereR3->GetTransform()->SetPosition(2, 1, 0);*/
 
-	GameEntity* solidSphereR1 = new GameEntity(cubeMesh, solidMaterialR3);
+	GameEntity* solidSphereR1 = new GameEntity(cubeMesh, solidMetalMaterialR2);
 	solidSphereR1->GetTransform()->SetScale(5, 1, 5);
 	solidSphereR1->GetTransform()->SetPosition(0, -2, 0);
 
-	GameEntity* solidSphereR2 = new GameEntity(sphereMesh, solidMetalMaterialR1);
+	GameEntity* solidSphereR2 = new GameEntity(sphereMesh, solidMaterialR2);
 	solidSphereR2->GetTransform()->SetScale(2, 2, 2);
 	solidSphereR2->GetTransform()->SetPosition(2, 0, 0);
 
-	GameEntity* solidSphereR3 = new GameEntity(sphereMesh, solidMaterialR2);
+	GameEntity* solidSphereR3 = new GameEntity(sphereMesh, solidMaterialR1);
 	solidSphereR3->GetTransform()->SetScale(2, 2, 2);
 	solidSphereR3->GetTransform()->SetPosition(0, 0, 0);
 
